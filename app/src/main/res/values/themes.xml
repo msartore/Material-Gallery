@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Gallery" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@color/md_theme_dark_background</item>
+        <item name="android:textColor">@color/md_theme_dark_primaryInverse</item>
+        <item name="android:textColorPrimary">@color/md_theme_dark_primary</item>
+        <item name="android:colorPrimary">@color/md_theme_dark_onPrimary</item>
+    </style>
+</resources>
