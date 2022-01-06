@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.MediaStore
 import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -17,7 +18,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.Menu
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.mutableStateListOf
@@ -27,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -35,9 +36,7 @@ import dev.msartore.gallery.ui.compose.FileAndMediaPermission
 import dev.msartore.gallery.ui.compose.ImageListUI
 import dev.msartore.gallery.ui.compose.ImageViewUI
 import dev.msartore.gallery.ui.theme.GalleryTheme
-import dev.msartore.gallery.utils.ImageClass
-import dev.msartore.gallery.utils.cor
-import dev.msartore.gallery.utils.queryImageMediaStore
+import dev.msartore.gallery.utils.*
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collect
 
@@ -50,6 +49,13 @@ class MainActivity : ComponentActivity() {
 
         val imageList = mutableStateListOf<ImageClass>()
         val imageListFlow = MutableSharedFlow<Unit>()
+
+        val intentCamera =
+            if (checkCameraHardware(this))
+                Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+            else
+                null
+
 
         val getContent = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
             if (it.resultCode != RESULT_OK) {
@@ -152,34 +158,45 @@ class MainActivity : ComponentActivity() {
                                             selectedImage.value = it
                                         }
 
-                                        if (scrollState.isScrollInProgress)
-                                            FloatingActionButton(
-                                                modifier = Modifier
-                                                    .align(Alignment.BottomEnd)
-                                                    .padding(16.dp),
-                                                containerColor = MaterialTheme.colorScheme.onSecondary,
-                                                onClick = { /*TODO*/ },
+                                        if (intentCamera != null) {
+
+                                            androidx.compose.animation.AnimatedVisibility(
+                                                visible = scrollState.isScrollInProgress,
+                                                modifier = Modifier.align(Alignment.BottomEnd)
                                             ) {
-                                                Icon(
-                                                    imageVector = Icons.Rounded.Menu,
-                                                    contentDescription = null,
-                                                    tint = MaterialTheme.colorScheme.onSecondaryContainer
-                                                )
+                                                FloatingActionButton(
+                                                    modifier = Modifier
+                                                        .padding(16.dp),
+                                                    containerColor = MaterialTheme.colorScheme.onSecondary,
+                                                    onClick = { startActivitySafely(intentCamera) },
+                                                ) {
+                                                    Icon(
+                                                        painter = painterResource(id = R.drawable.baseline_photo_camera_24),
+                                                        contentDescription = null,
+                                                        tint = MaterialTheme.colorScheme.onSecondaryContainer
+                                                    )
+                                                }
                                             }
-                                        else
-                                            LargeFloatingActionButton(
-                                                modifier = Modifier
-                                                    .align(Alignment.BottomEnd)
-                                                    .padding(16.dp),
-                                                containerColor = MaterialTheme.colorScheme.onSecondary,
-                                                onClick = { /*TODO*/ },
+
+                                            androidx.compose.animation.AnimatedVisibility(
+                                                visible = !scrollState.isScrollInProgress,
+                                                modifier = Modifier.align(Alignment.BottomEnd)
                                             ) {
-                                                Icon(
-                                                    imageVector = Icons.Rounded.Menu,
-                                                    contentDescription = null,
-                                                    tint = MaterialTheme.colorScheme.onSecondaryContainer
-                                                )
+                                                LargeFloatingActionButton(
+                                                    modifier = Modifier
+                                                        .padding(16.dp),
+                                                    containerColor = MaterialTheme.colorScheme.onSecondary,
+                                                    onClick = { startActivitySafely(intentCamera) },
+                                                ) {
+                                                    Icon(
+                                                        painter = painterResource(id = R.drawable.baseline_photo_camera_24),
+                                                        contentDescription = null,
+                                                        tint = MaterialTheme.colorScheme.onSecondaryContainer
+                                                    )
+                                                }
                                             }
+                                        }
+
                                     }
                                     else {
                                         ImageViewUI(selectedImage.value!!)
