@@ -10,6 +10,7 @@ import android.os.Bundle
 import android.provider.MediaStore
 import android.provider.Settings
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.IntentSenderRequest
@@ -203,6 +204,13 @@ class MainActivity : ComponentActivity() {
                                             color = MaterialTheme.colorScheme.onBackground
                                         )
                                     checkBoxVisible.value -> {
+                                        BackHandler(enabled = true){
+                                            imageList.forEach {
+                                                it.selected.value = false
+                                            }
+                                            checkBoxVisible.value = false
+                                        }
+
                                         Icon(
                                             imageVector = Icons.Rounded.Close
                                         ) {
@@ -334,8 +342,16 @@ class MainActivity : ComponentActivity() {
                                         visible = selectedImage.value != null,
                                         enter = scaleIn()
                                     ) {
-                                        if (selectedImage.value != null)
+
+                                        if (selectedImage.value != null) {
+
+                                            BackHandler(enabled = true){
+                                                selectedImage.value = null
+                                            }
+
                                             ImageViewUI(selectedImage.value!!)
+                                        }
+
                                     }
                                 }
                             )
