@@ -52,6 +52,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.ArrayList
 
 @SuppressLint("NewApi")
 @OptIn(ExperimentalCoilApi::class, ExperimentalAnimationApi::class, ExperimentalFoundationApi::class)
@@ -113,6 +114,8 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+        val selectedImage = mutableStateOf<ImageClass?>(null)
+
         cor {
 
             imageListFlow.collect {
@@ -143,10 +146,8 @@ class MainActivity : ComponentActivity() {
                 // A surface container using the 'background' color from the theme
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+                    color = if (selectedImage.value != null) Color.Black else MaterialTheme.colorScheme.background
                 ) {
-
-                    val selectedImage = remember { mutableStateOf<ImageClass?>(null) }
                     val scrollState = rememberLazyListState()
                     val checkBoxVisible = remember { mutableStateOf(false) }
 
@@ -165,23 +166,32 @@ class MainActivity : ComponentActivity() {
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 if (selectedImage.value != null) {
-
                                     Icon(
-                                        imageVector = Icons.Rounded.ArrowBack
+                                        imageVector = Icons.Rounded.ArrowBack,
+                                        tint = Color.White,
                                     ) {
                                         selectedImage.value = null
                                     }
 
                                     Icon(
-                                        onClick = {
-                                            cor {
-                                                deletePhotoFromExternalStorage(selectedImage.value!!.uri) {
-                                                    selectedImage.value = null
-                                                }
+                                        painter = painterResource(id = R.drawable.baseline_share_24),
+                                        tint = Color.White
+                                    ) {
+                                        selectedImage.value?.uri?.let {
+                                            shareImage(arrayListOf(it))
+                                        }
+                                    }
+
+                                    Icon(
+                                        imageVector = Icons.Rounded.Delete,
+                                        tint = Color.White
+                                    ) {
+                                        cor {
+                                            deletePhotoFromExternalStorage(selectedImage.value!!.uri) {
+                                                selectedImage.value = null
                                             }
-                                        },
-                                        imageVector = Icons.Rounded.Delete
-                                    )
+                                        }
+                                    }
                                 }
 
                                 when {
@@ -196,28 +206,44 @@ class MainActivity : ComponentActivity() {
                                         Icon(
                                             imageVector = Icons.Rounded.Close
                                         ) {
+                                            imageList.forEach {
+                                                it.selected.value = false
+                                            }
                                             checkBoxVisible.value = false
                                         }
 
                                         Icon(
-                                            onClick = {
+                                            painter = painterResource(id = R.drawable.baseline_share_24)
+                                        ) {
+                                            val selectedImageList = imageList.filter { it.selected.value }
 
-                                                val deleteList = imageList.filter { it.selected.value }
+                                            if (selectedImageList.isNotEmpty()) {
 
-                                                if (deleteList.isNotEmpty()) {
+                                                val uriList = ArrayList<Uri>()
 
-                                                    deleteInProgress = true
-                                                    counterImageToDelete = deleteList.size
+                                                uriList.addAll(selectedImageList.map { it.uri })
 
-                                                    cor {
-                                                        deleteList.forEach {
-                                                            deletePhotoFromExternalStorage(it.uri)
-                                                        }
+                                                shareImage(uriList)
+                                            }
+                                        }
+
+                                        Icon(
+                                            imageVector = Icons.Rounded.Delete
+                                        ) {
+                                            val selectedImageList = imageList.filter { it.selected.value }
+
+                                            if (selectedImageList.isNotEmpty()) {
+
+                                                deleteInProgress = true
+                                                counterImageToDelete = selectedImageList.size
+
+                                                cor {
+                                                    selectedImageList.forEach {
+                                                        deletePhotoFromExternalStorage(it.uri)
                                                     }
                                                 }
-                                            },
-                                            imageVector = Icons.Rounded.Delete
-                                        )
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -246,12 +272,7 @@ class MainActivity : ComponentActivity() {
                                     androidx.compose.animation.AnimatedVisibility(
                                         visible = !loading.value && selectedImage.value == null,
                                         enter = expandVertically(),
-                                        exit = shrinkVertically(
-                                            animationSpec = tween(
-                                                durationMillis = 50,
-                                                easing = FastOutSlowInEasing
-                                            )
-                                        )
+                                        exit = fadeOut()
                                     ) {
                                         ImageListUI(
                                             lazyListState = scrollState,
@@ -311,8 +332,7 @@ class MainActivity : ComponentActivity() {
 
                                     androidx.compose.animation.AnimatedVisibility(
                                         visible = selectedImage.value != null,
-                                        enter = scaleIn(),
-                                        exit = scaleOut()
+                                        enter = scaleIn()
                                     ) {
                                         if (selectedImage.value != null)
                                             ImageViewUI(selectedImage.value!!)
@@ -355,6 +375,18 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    private fun shareImage(imageUriArray: ArrayList<Uri>) {
+
+        val intent = Intent(Intent.ACTION_SEND_MULTIPLE)
+
+        intent.type = "image/*"
+        intent.putExtra(Intent.EXTRA_STREAM, imageUriArray);
+        intent.putExtra(Intent.EXTRA_TEXT, "Sharing Image");
+        intent.putExtra(Intent.EXTRA_SUBJECT, "Subject Here");
+
+        startActivity(Intent.createChooser(intent, "Share Via"));
     }
 
     override fun onDestroy() {
