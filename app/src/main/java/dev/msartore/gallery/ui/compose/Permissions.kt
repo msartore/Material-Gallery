@@ -7,6 +7,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionRequired
 import com.google.accompanist.permissions.rememberPermissionState
+import dev.msartore.gallery.ui.compose.basic.Dialog
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable

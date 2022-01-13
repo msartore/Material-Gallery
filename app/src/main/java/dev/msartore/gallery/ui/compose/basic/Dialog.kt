@@ -1,4 +1,4 @@
-package dev.msartore.gallery.ui.compose
+package dev.msartore.gallery.ui.compose.basic
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable

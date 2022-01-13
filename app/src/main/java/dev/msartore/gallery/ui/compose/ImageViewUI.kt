@@ -2,7 +2,6 @@ package dev.msartore.gallery.ui.compose
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -30,7 +29,6 @@ fun ImageViewUI(image: ImageClass) {
     val thumbnail = rememberImagePainter(data = image.uri)
     val scale = remember { mutableStateOf(1f) }
     val translate = remember { mutableStateOf(Offset(0f, 0f)) }
-    val actionsMenuIsEnabled = remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
@@ -44,11 +42,6 @@ fun ImageViewUI(image: ImageClass) {
                     change.consumeAllChanges()
                     translate.value += dragAmount
                 }
-                detectTapGestures(
-                    onTap = {
-                        actionsMenuIsEnabled.value = !actionsMenuIsEnabled.value
-                    }
-                )
             }
     ) {
 
@@ -66,7 +59,5 @@ fun ImageViewUI(image: ImageClass) {
             contentDescription = null,
             contentScale = ContentScale.Fit,
         )
-
-        ActionsMenuUI(actionsMenuIsEnabled = actionsMenuIsEnabled)
     }
 }
