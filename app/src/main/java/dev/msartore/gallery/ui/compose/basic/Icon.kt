@@ -38,10 +38,6 @@ fun Icon(
     contentDescription: String? = null,
     onClick: (() -> Unit)? = null,
 ) {
-    val modifier = Modifier
-        .clip(RoundedCornerShape(35.dp))
-        .clickable { onClick?.invoke() }
-        .padding(8.dp)
 
     if (onClick != null)
         Icon(

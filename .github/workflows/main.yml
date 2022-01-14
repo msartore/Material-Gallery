@@ -32,7 +32,7 @@ jobs:
     - name: Create Release
       uses: ncipollo/release-action@v1.8.6
       with:
-        artifacts: /home/runner/work/Material-Gallery/Material-Gallery/app/build/outputs/apk/github/Material_Gallery-github-unsigned.apk
+        artifacts: /home/runner/work/Material-Gallery/Material-Gallery/app/build/outputs/apk/github/Material_Gallery-github.apk
         name: ${{steps.previoustag.outputs.tag}}
         tag: ${{steps.previoustag.outputs.tag}}
         token: ${{ secrets.GITHUB_TOKEN }}

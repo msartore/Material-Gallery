@@ -11,17 +11,19 @@ android {
         minSdk 28
         targetSdk 31
         versionCode 1
-        versionName "1.0"
+        versionName "1.0.1"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary true
         }
+        signingConfig signingConfigs.debug
     }
 
     buildTypes {
         github {
             applicationIdSuffix ".github"
+            versionNameSuffix "-github"
             debuggable false
             minifyEnabled true
             multiDexEnabled true

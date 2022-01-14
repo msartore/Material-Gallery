@@ -16,7 +16,6 @@ import android.util.Size
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 
-
 data class ImageClass(
     val uri: Uri,
     val name: String,

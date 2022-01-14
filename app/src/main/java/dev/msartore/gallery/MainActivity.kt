@@ -15,9 +15,10 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.*
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -53,7 +54,6 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.util.ArrayList
 
 @SuppressLint("NewApi")
 @OptIn(ExperimentalCoilApi::class, ExperimentalAnimationApi::class, ExperimentalFoundationApi::class)
@@ -65,6 +65,7 @@ class MainActivity : ComponentActivity() {
     private val imageListFlow = MutableSharedFlow<Unit>()
     private var deleteInProgress = false
     private var updateNeeded = false
+    private var firstStart = true
     private var counterImageToDelete = 0
     private var intentSenderLauncher: ActivityResultLauncher<IntentSenderRequest> =
         registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) {
@@ -277,6 +278,13 @@ class MainActivity : ComponentActivity() {
                                 },
                                 onPermissionGranted = {
 
+                                    if (firstStart) {
+                                        firstStart = false
+                                        cor {
+                                            imageListFlow.emit(Unit)
+                                        }
+                                    }
+
                                     androidx.compose.animation.AnimatedVisibility(
                                         visible = !loading.value && selectedImage.value == null,
                                         enter = expandVertically(),
@@ -293,7 +301,7 @@ class MainActivity : ComponentActivity() {
 
                                     if (selectedImage.value == null) {
 
-                                        if(loading.value) {
+                                        if (loading.value) {
                                             CircularProgressIndicator(
                                                 modifier = Modifier
                                                     .height(100.dp)
@@ -398,11 +406,11 @@ class MainActivity : ComponentActivity() {
         val intent = Intent(Intent.ACTION_SEND_MULTIPLE)
 
         intent.type = "image/*"
-        intent.putExtra(Intent.EXTRA_STREAM, imageUriArray);
-        intent.putExtra(Intent.EXTRA_TEXT, "Sharing Image");
-        intent.putExtra(Intent.EXTRA_SUBJECT, "Subject Here");
+        intent.putExtra(Intent.EXTRA_STREAM, imageUriArray)
+        intent.putExtra(Intent.EXTRA_TEXT, "Sharing Image")
+        intent.putExtra(Intent.EXTRA_SUBJECT, "Subject Here")
 
-        startActivity(Intent.createChooser(intent, "Share Via"));
+        startActivity(Intent.createChooser(intent, "Share Via"))
     }
 
     override fun onDestroy() {
