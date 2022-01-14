@@ -99,7 +99,7 @@ class MainActivity : ComponentActivity() {
 
         val intentCamera =
             if (checkCameraHardware(this))
-                Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+                Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA)
             else
                 null
 
