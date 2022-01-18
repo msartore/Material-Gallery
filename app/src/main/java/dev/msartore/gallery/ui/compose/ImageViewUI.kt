@@ -20,11 +20,11 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import coil.annotation.ExperimentalCoilApi
 import coil.compose.rememberImagePainter
-import dev.msartore.gallery.utils.ImageClass
+import dev.msartore.gallery.utils.MediaClass
 
 @OptIn(ExperimentalCoilApi::class, ExperimentalMaterialApi::class)
 @Composable
-fun ImageViewUI(image: ImageClass) {
+fun ImageViewUI(image: MediaClass) {
 
     val thumbnail = rememberImagePainter(data = image.uri)
     val scale = remember { mutableStateOf(1f) }

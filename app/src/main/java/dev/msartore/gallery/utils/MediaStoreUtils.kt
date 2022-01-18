@@ -1,5 +1,6 @@
 package dev.msartore.gallery.utils
 
+import android.app.RecoverableSecurityException
 import android.content.ContentResolver
 import android.content.ContentUris
 import android.content.Context
@@ -13,13 +14,19 @@ import android.os.Looper
 import android.provider.MediaStore
 import android.provider.MediaStore.MediaColumns
 import android.util.Size
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.IntentSenderRequest
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.time.Duration
 
-data class ImageClass(
+open class MediaClass(
     val uri: Uri,
     val name: String,
     val size: Int,
+    val duration: Duration? = null,
     var selected: MutableState<Boolean> = mutableStateOf(false)
 )
 
@@ -28,9 +35,9 @@ data class DatabaseInfo(
     var countImage : Int = 0,
 )
 
-fun ContentResolver.queryImageMediaStore(): List<ImageClass> {
+fun ContentResolver.queryImageMediaStore(): List<MediaClass> {
 
-    val imageList = mutableListOf<ImageClass>()
+    val imageList = mutableListOf<MediaClass>()
 
     val collection =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -77,11 +84,71 @@ fun ContentResolver.queryImageMediaStore(): List<ImageClass> {
 
             // Stores column values and the contentUri in a local object
             // that represents the media file.
-            imageList.add(ImageClass(contentUri, name, size))
+            imageList.add(MediaClass(contentUri, name, size))
         }
     }
 
     return imageList
+}
+
+fun ContentResolver.queryVideoMediaStore(): List<MediaClass> {
+
+    val videoList = mutableListOf<MediaClass>()
+
+    val collection =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            MediaStore.Video.Media.getContentUri(
+                MediaStore.VOLUME_EXTERNAL
+            )
+        } else {
+            MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+        }
+
+    val sortOrder = MediaStore.Video.Media.DATE_TAKEN + " DESC"
+
+    val projection = arrayOf(
+        MediaStore.Video.Media._ID,
+        MediaStore.Video.Media.DISPLAY_NAME,
+        MediaStore.Video.Media.SIZE,
+        MediaStore.Video.Media.DURATION
+    )
+
+    val query = this.query(
+        collection,
+        projection,
+        null,
+        null,
+        sortOrder
+    )
+
+    query?.use { cursor ->
+        // Cache column indices.
+        val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Video.Media._ID)
+        val nameColumn =
+            cursor.getColumnIndexOrThrow(MediaStore.Video.Media.DISPLAY_NAME)
+        val sizeColumn = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.SIZE)
+        val durationColumn = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.DURATION)
+
+        while (cursor.moveToNext()) {
+
+            val id = cursor.getLong(idColumn)
+            val name = cursor.getString(nameColumn)
+            val size = cursor.getInt(sizeColumn)
+            val duration = Duration.ofMillis(cursor.getLong(durationColumn))
+
+            val contentUri: Uri = ContentUris.withAppendedId(
+                MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
+                id
+            )
+
+            // Stores column
+            // values and the contentUri in a local object
+            // that represents the media file.
+            videoList.add(MediaClass(contentUri, name, size, duration))
+        }
+    }
+
+    return videoList
 }
 
 fun ContentResolver.getImageSize(image: Uri): Size {
@@ -126,6 +193,34 @@ fun Context.initContentResolver(
 fun Context.unregisterContentResolver(contentObserver: ContentObserver) {
 
     contentResolver.unregisterContentObserver(contentObserver)
+}
+
+suspend fun ContentResolver.deletePhotoFromExternalStorage(
+    photoUri: Uri,
+    intentSenderLauncher: ActivityResultLauncher<IntentSenderRequest>
+) {
+
+    withContext(Dispatchers.IO) {
+        try {
+            delete(photoUri, null, null)
+        } catch (e: SecurityException) {
+            val intentSender = when {
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.R -> {
+                    MediaStore.createDeleteRequest(this@deletePhotoFromExternalStorage, listOf(photoUri)).intentSender
+                }
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q -> {
+                    val recoverableSecurityException = e as? RecoverableSecurityException
+                    recoverableSecurityException?.userAction?.actionIntent?.intentSender
+                }
+                else -> null
+            }
+            intentSender?.let { sender ->
+                intentSenderLauncher.launch(
+                    IntentSenderRequest.Builder(sender).build()
+                )
+            }
+        }
+    }
 }
 
 private fun readLastDateFromMediaStore(context: Context): DatabaseInfo {

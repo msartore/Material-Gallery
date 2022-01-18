@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.widget.Toast
 
+
 fun Context.startActivitySafely(intent: Intent) {
     runCatching {
         startActivity(intent)
