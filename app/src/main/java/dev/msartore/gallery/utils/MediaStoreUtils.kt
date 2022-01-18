@@ -1,9 +1,11 @@
 package dev.msartore.gallery.utils
 
+import android.app.Activity
 import android.app.RecoverableSecurityException
 import android.content.ContentResolver
 import android.content.ContentUris
 import android.content.Context
+import android.content.Intent
 import android.database.ContentObserver
 import android.database.Cursor
 import android.graphics.BitmapFactory
@@ -33,6 +35,11 @@ open class MediaClass(
 data class DatabaseInfo(
     var dateAdded : Long = 0L,
     var countImage : Int = 0,
+)
+
+data class DeleteMediaVars(
+    val listUri: List<Uri>,
+    val action: (() -> Unit)? = null
 )
 
 fun ContentResolver.queryImageMediaStore(): List<MediaClass> {
@@ -238,4 +245,14 @@ private fun readLastDateFromMediaStore(context: Context): DatabaseInfo {
     cursor.close()
 
     return result
+}
+
+fun Activity.shareImage(imageUriArray: ArrayList<Uri>) {
+
+    val intent = Intent(Intent.ACTION_SEND_MULTIPLE)
+
+    intent.type = "image/*"
+    intent.putExtra(Intent.EXTRA_STREAM, imageUriArray)
+
+    startActivity(Intent.createChooser(intent, "Share Via"))
 }

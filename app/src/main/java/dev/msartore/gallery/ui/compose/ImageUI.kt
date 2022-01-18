@@ -50,7 +50,6 @@ fun Context.ImageUI(
     }
 
     if (thumbnail.value != null) {
-        Log.d("ImageUI", "thumbnail: ${thumbnail.value?.width}x${thumbnail.value?.height}")
         Box(
             modifier = Modifier
                 .clip(RoundedCornerShape(16.dp))
@@ -109,7 +108,6 @@ fun Context.ImageUI(
                     .width(100.dp)
                     .height(100.dp)
             )
-        Log.d("ImageUI", "Image is null")
     }
 
 }
