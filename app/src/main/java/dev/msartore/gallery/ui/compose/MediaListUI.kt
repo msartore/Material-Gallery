@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.GridCells
 import androidx.compose.foundation.lazy.LazyListState
@@ -27,13 +28,15 @@ fun Context.MediaListUI(
         contentPadding = PaddingValues(top = 80.dp),
         state = lazyListState,
         cells = GridCells.Adaptive(80.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
         content = {
             items(mediaList.size){ index ->
 
                 ImageUI(
                     media = mediaList[index],
                     checkBoxVisible = checkBoxVisible,
-                    selected = mediaList[index].selected
+                    mediaList = mediaList,
                 ) {
                     onClickImage(mediaList[index])
                 }

@@ -15,6 +15,7 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
 import android.provider.MediaStore.MediaColumns
+import android.util.Log
 import android.util.Size
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.IntentSenderRequest
@@ -177,6 +178,8 @@ fun Context.initContentResolver(
         override fun onChange(selfChange: Boolean) {
 
             super.onChange(selfChange)
+
+            Log.d("ContentObserver", "onChange")
 
             val lastDatabaseInfo = readLastDateFromMediaStore(context)
 

@@ -24,10 +24,8 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -53,14 +51,14 @@ class MainActivity : ComponentActivity() {
     private var contentObserver: ContentObserver? = null
     private var deletedImageUri: Uri? = null
     private var deleteAction: (() -> Unit)? = null
-    private val mediaListFlow = MutableSharedFlow<Unit>()
+    private var mediaListUpdate = false
     private var deleteInProgress = false
     private var updateNeeded = false
-    private var firstStart = true
     private var counterImageToDelete = 0
+    private val mediaList = SnapshotStateList<MediaClass>()
     private var intentSenderLauncher: ActivityResultLauncher<IntentSenderRequest> =
-        registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) {
-            if (it.resultCode == RESULT_OK) {
+        registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { activityResult ->
+            if (activityResult.resultCode == RESULT_OK) {
 
                 if(Build.VERSION.SDK_INT == Build.VERSION_CODES.Q) {
                     lifecycleScope.launch {
@@ -77,21 +75,22 @@ class MainActivity : ComponentActivity() {
 
             Log.d("MainActivity", "counterImageToDelete: $counterImageToDelete updateNeeded: $updateNeeded")
 
-            if (updateNeeded && counterImageToDelete == 0)
-                cor {
-                    deleteInProgress = false
-                    mediaListFlow.emit(Unit)
+            if (updateNeeded && counterImageToDelete == 0) {
+                runCatching {
+                    mediaList.removeIf { it.uri == deletedImageUri }
                 }
+                deleteInProgress = false
+            }
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
 
         super.onCreate(savedInstanceState)
-
-        val mediaList = mutableStateListOf<MediaClass>()
-        val loading = mutableStateOf(false)
-        val selectedMedia = mutableStateOf<MediaClass?>(null)
+        
         val mediaDelete = MutableSharedFlow<DeleteMediaVars>()
+        val selectedMedia = mutableStateOf<MediaClass?>(null)
+        val loading = mutableStateOf(false)
+        val checkBoxVisible = mutableStateOf(false)
         val getContent = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
             if (it.resultCode != RESULT_OK) {
                 finishAffinity()
@@ -99,15 +98,13 @@ class MainActivity : ComponentActivity() {
         }
 
         this.initContentResolver(contentResolver) {
-            cor {
-                mediaListFlow.emit(Unit)
-            }
+            mediaListUpdate = !mediaListUpdate
         }
 
         cor {
             mediaDelete.collect {
                 deleteInProgress = true
-
+                checkBoxVisible.value = false
                 counterImageToDelete = it.listUri.size
 
                 it.listUri.forEach { uri ->
@@ -119,33 +116,6 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        cor {
-            mediaListFlow.collect {
-
-                Log.d("MediaListFlow", "$deleteInProgress")
-                if (!deleteInProgress)
-                    cor {
-
-                        loading.value = true
-
-                        mediaList.clear()
-                        mediaList.addAll(contentResolver.queryImageMediaStore())
-                        mediaList.addAll(contentResolver.queryVideoMediaStore())
-
-                        delay(10)
-
-                        loading.value = false
-                        updateNeeded = false
-                    }
-            }
-        }
-
-        cor {
-            mediaList.clear()
-            mediaList.addAll(contentResolver.queryImageMediaStore())
-            mediaList.addAll(contentResolver.queryVideoMediaStore())
-        }
-
         setContent {
             GalleryTheme {
                 Surface(
@@ -153,11 +123,28 @@ class MainActivity : ComponentActivity() {
                     color = if (selectedMedia.value != null) Color.Black else MaterialTheme.colorScheme.background
                 ) {
                     val scrollState = rememberLazyListState()
-                    val checkBoxVisible = remember { mutableStateOf(false) }
-
-                    // Remember a SystemUiController
                     val systemUiController = rememberSystemUiController()
                     val useDarkIcons = androidx.compose.material.MaterialTheme.colors.isLight
+
+                    LaunchedEffect(key1 = mediaListUpdate) {
+
+                        Log.d("MainActivity", "mediaListUpdate: $mediaListUpdate")
+
+                        if (!deleteInProgress)
+                            cor {
+
+                                loading.value = true
+
+                                mediaList.clear()
+                                mediaList.addAll(contentResolver.queryImageMediaStore())
+                                mediaList.addAll(contentResolver.queryVideoMediaStore())
+
+                                delay(100)
+
+                                loading.value = false
+                                updateNeeded = false
+                            }
+                    }
 
                     SideEffect {
                         systemUiController.setSystemBarsColor(
@@ -185,10 +172,15 @@ class MainActivity : ComponentActivity() {
                                 },
                                 onPermissionGranted = {
 
-                                    if (firstStart) {
-                                        firstStart = false
-                                        cor {
-                                            mediaListFlow.emit(Unit)
+                                    if (selectedMedia.value == null) {
+                                        if (loading.value) {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier
+                                                    .height(100.dp)
+                                                    .width(100.dp)
+                                                    .align(Alignment.Center),
+                                                color = Color.White
+                                            )
                                         }
                                     }
 
@@ -203,18 +195,6 @@ class MainActivity : ComponentActivity() {
                                             checkBoxVisible = checkBoxVisible,
                                         ) {
                                             selectedMedia.value = it
-                                        }
-                                    }
-
-                                    if (selectedMedia.value == null) {
-                                        if (loading.value) {
-                                            CircularProgressIndicator(
-                                                modifier = Modifier
-                                                    .height(100.dp)
-                                                    .width(100.dp)
-                                                    .align(Alignment.Center),
-                                                color = Color.White
-                                            )
                                         }
                                     }
 
