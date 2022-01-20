@@ -24,7 +24,7 @@ import dev.msartore.gallery.utils.MediaClass
 
 @OptIn(ExperimentalCoilApi::class, ExperimentalMaterialApi::class)
 @Composable
-fun ImageViewUI(image: MediaClass) {
+fun ImageViewerUI(image: MediaClass) {
 
     val thumbnail = rememberImagePainter(data = image.uri)
     val scale = remember { mutableStateOf(1f) }

@@ -14,12 +14,14 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.ExperimentalAnimationApi
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -33,10 +35,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import coil.annotation.ExperimentalCoilApi
-import dev.msartore.gallery.ui.compose.FileAndMediaPermission
-import dev.msartore.gallery.ui.compose.ImageViewUI
-import dev.msartore.gallery.ui.compose.MediaListUI
-import dev.msartore.gallery.ui.compose.ToolBarUI
+import dev.msartore.gallery.ui.compose.*
 import dev.msartore.gallery.ui.theme.GalleryTheme
 import dev.msartore.gallery.utils.*
 import kotlinx.coroutines.delay
@@ -108,7 +107,7 @@ class MainActivity : ComponentActivity() {
                 finishAffinity()
             }
         }
-
+        val toolbarVisible = mutableStateOf(false)
         this.initContentResolver(contentResolver) {
             cor { updateList.emit(Unit) }
         }
@@ -204,7 +203,7 @@ class MainActivity : ComponentActivity() {
                                 }
 
                                 androidx.compose.animation.AnimatedVisibility(
-                                    visible = selectedMedia.value != null,
+                                    visible = selectedMedia.value != null && selectedMedia.value?.duration == null,
                                     enter = scaleIn()
                                 ) {
 
@@ -214,12 +213,33 @@ class MainActivity : ComponentActivity() {
                                             selectedMedia.value = null
                                         }
 
-                                        ImageViewUI(selectedMedia.value!!)
+                                        ImageViewerUI(selectedMedia.value!!)
+                                    }
+                                }
+
+                                androidx.compose.animation.AnimatedVisibility(
+                                    visible = selectedMedia.value != null && selectedMedia.value?.duration != null,
+                                    enter = scaleIn()
+                                ) {
+
+                                    if (selectedMedia.value != null) {
+
+                                        BackHandler(enabled = true){
+                                            selectedMedia.value = null
+                                        }
+
+                                        VideoViewerUI(selectedMedia.value!!.uri) {
+                                            toolbarVisible.value =
+                                                when (it) {
+                                                    VideoControllerVisibility.VISIBLE.value -> false
+                                                    else -> true
+                                                }
+                                        }
                                     }
                                 }
 
                                 ToolBarUI(
-                                    visible = scrollState.firstVisibleItemScrollOffset == 0 || !scrollState.isScrollInProgress  || checkBoxVisible.value,
+                                    visible = (scrollState.firstVisibleItemScrollOffset == 0 || !scrollState.isScrollInProgress  || checkBoxVisible.value) && toolbarVisible.value,
                                     mediaList = mediaList,
                                     mediaDelete = mediaDeleteFlow,
                                     selectedMedia = selectedMedia,
