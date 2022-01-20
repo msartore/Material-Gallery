@@ -24,7 +24,8 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.*
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,7 +33,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import coil.annotation.ExperimentalCoilApi
-import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import dev.msartore.gallery.ui.compose.FileAndMediaPermission
 import dev.msartore.gallery.ui.compose.ImageViewUI
 import dev.msartore.gallery.ui.compose.MediaListUI
@@ -123,35 +123,6 @@ class MainActivity : ComponentActivity() {
                     color = if (selectedMedia.value != null) Color.Black else MaterialTheme.colorScheme.background
                 ) {
                     val scrollState = rememberLazyListState()
-                    val systemUiController = rememberSystemUiController()
-                    val useDarkIcons = androidx.compose.material.MaterialTheme.colors.isLight
-
-                    LaunchedEffect(key1 = mediaListUpdate) {
-
-                        Log.d("MainActivity", "mediaListUpdate: $mediaListUpdate")
-
-                        if (!deleteInProgress)
-                            cor {
-
-                                loading.value = true
-
-                                mediaList.clear()
-                                mediaList.addAll(contentResolver.queryImageMediaStore())
-                                mediaList.addAll(contentResolver.queryVideoMediaStore())
-
-                                delay(100)
-
-                                loading.value = false
-                                updateNeeded = false
-                            }
-                    }
-
-                    SideEffect {
-                        systemUiController.setSystemBarsColor(
-                            color = Color.Transparent,
-                            darkIcons = useDarkIcons
-                        )
-                    }
 
                     Log.d("Gallery", "GalleryActivity onCreate")
 
@@ -171,6 +142,26 @@ class MainActivity : ComponentActivity() {
                                     finishAffinity()
                                 },
                                 onPermissionGranted = {
+
+                                    LaunchedEffect(key1 = mediaListUpdate) {
+
+                                        Log.d("MainActivity", "mediaListUpdate: $mediaListUpdate")
+
+                                        if (!deleteInProgress)
+                                            cor {
+
+                                                loading.value = true
+
+                                                mediaList.clear()
+                                                mediaList.addAll(contentResolver.queryImageMediaStore())
+                                                mediaList.addAll(contentResolver.queryVideoMediaStore())
+
+                                                delay(100)
+
+                                                loading.value = false
+                                                updateNeeded = false
+                                            }
+                                    }
 
                                     if (selectedMedia.value == null) {
                                         if (loading.value) {
@@ -208,11 +199,6 @@ class MainActivity : ComponentActivity() {
                                             BackHandler(enabled = true){
                                                 selectedMedia.value = null
                                             }
-
-                                            systemUiController.setSystemBarsColor(
-                                                color = Color.Black,
-                                                darkIcons = false
-                                            )
 
                                             ImageViewUI(selectedMedia.value!!)
                                         }

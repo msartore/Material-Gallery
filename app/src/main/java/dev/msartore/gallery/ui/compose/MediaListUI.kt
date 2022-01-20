@@ -28,8 +28,8 @@ fun Context.MediaListUI(
         contentPadding = PaddingValues(top = 80.dp),
         state = lazyListState,
         cells = GridCells.Adaptive(80.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalArrangement = Arrangement.spacedBy(3.dp),
+        horizontalArrangement = Arrangement.spacedBy(3.dp),
         content = {
             items(mediaList.size){ index ->
 

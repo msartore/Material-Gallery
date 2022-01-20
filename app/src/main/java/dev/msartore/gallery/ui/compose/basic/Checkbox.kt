@@ -26,12 +26,12 @@ fun CheckBox() {
         modifier = Modifier
             .clip(CircleShape)
             .size(30.dp)
-            .background(color = MaterialTheme.colorScheme.onBackground),
+            .background(color = MaterialTheme.colorScheme.primary),
         contentAlignment = Alignment.Center
     ) {
         Icon(
             imageVector = Icons.Rounded.Check,
-            tint = Color.Black,
+            tint = if (androidx.compose.material.MaterialTheme.colors.isLight) Color.Black else Color.White,
             contentDescription = ""
         )
     }

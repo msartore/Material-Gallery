@@ -13,11 +13,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -60,7 +59,6 @@ fun Context.ImageUI(
     if (thumbnail.value != null) {
         Box(
             modifier = Modifier
-                .clip(RoundedCornerShape(16.dp))
                 .wrapContentSize()
                 .pointerInput(Unit) {
                     detectTapGestures(
@@ -112,10 +110,11 @@ fun Context.ImageUI(
             ) { targetExpanded ->
                 Image(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(16.dp))
-                        .width(if (targetExpanded) 80.dp else 100.dp)
-                        .height(if (targetExpanded) 80.dp else 100.dp)
-                        .align(Alignment.Center),
+                        .width(100.dp)
+                        .height(100.dp)
+                        .background(if (targetExpanded) MaterialTheme.colorScheme.background else Color.Transparent)
+                        .padding(if (targetExpanded) 10.dp else 0.dp)
+                        .clip(if (targetExpanded) RoundedCornerShape(16.dp) else RoundedCornerShape(0.dp)),
                     bitmap = thumbnail.value!!,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
