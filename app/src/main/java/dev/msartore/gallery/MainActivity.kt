@@ -1,13 +1,11 @@
 package dev.msartore.gallery
 
 import android.annotation.SuppressLint
-import android.app.RecoverableSecurityException
 import android.content.Intent
 import android.database.ContentObserver
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.provider.MediaStore
 import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -16,44 +14,35 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CircularProgressIndicator
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.Delete
-import androidx.compose.material3.*
-import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
 import coil.annotation.ExperimentalCoilApi
 import dev.msartore.gallery.ui.compose.FileAndMediaPermission
-import dev.msartore.gallery.ui.compose.ImageListUI
 import dev.msartore.gallery.ui.compose.ImageViewUI
-import dev.msartore.gallery.ui.compose.basic.Icon
+import dev.msartore.gallery.ui.compose.MediaListUI
+import dev.msartore.gallery.ui.compose.ToolBarUI
 import dev.msartore.gallery.ui.theme.GalleryTheme
 import dev.msartore.gallery.utils.*
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 @SuppressLint("NewApi")
 @OptIn(ExperimentalCoilApi::class, ExperimentalAnimationApi::class, ExperimentalFoundationApi::class)
@@ -62,48 +51,58 @@ class MainActivity : ComponentActivity() {
     private var contentObserver: ContentObserver? = null
     private var deletedImageUri: Uri? = null
     private var deleteAction: (() -> Unit)? = null
-    private val imageListFlow = MutableSharedFlow<Unit>()
+    private val updateList = MutableSharedFlow<Unit>()
     private var deleteInProgress = false
     private var updateNeeded = false
-    private var firstStart = true
-    private var counterImageToDelete = 0
+    private var imageDeleteCounter = 0
+    private val mediaList = SnapshotStateList<MediaClass>()
+    private val checkBoxVisible = mutableStateOf(false)
     private var intentSenderLauncher: ActivityResultLauncher<IntentSenderRequest> =
-        registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) {
-            if (it.resultCode == RESULT_OK) {
+        registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { activityResult ->
+            if (activityResult.resultCode == RESULT_OK) {
 
                 if(Build.VERSION.SDK_INT == Build.VERSION_CODES.Q) {
                     lifecycleScope.launch {
-                        deletePhotoFromExternalStorage(deletedImageUri ?: return@launch)
+                        setVarsAndDeleteImage(deletedImageUri ?: return@launch)
                     }
                 }
                 deleteAction?.invoke()
 
                 updateNeeded = true
+
+                runCatching {
+                    mediaList.removeIf { it.uri == deletedImageUri }
+                }.getOrElse {
+                    it.printStackTrace()
+                }
             }
 
-            counterImageToDelete -= 1
+            imageDeleteCounter -= 1
 
-            if (updateNeeded && counterImageToDelete == 0)
-                cor {
-                    deleteInProgress = false
-                    imageListFlow.emit(Unit)
+            if (imageDeleteCounter == 0) {
+
+                mediaList.forEach {
+                    it.selected.value = false
                 }
+                checkBoxVisible.value = false
+                deleteInProgress = false
+
+                if (updateNeeded) {
+                    updateNeeded = false
+                    lifecycleScope.launch {
+                        updateList.emit(Unit)
+                    }
+                }
+            }
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
 
         super.onCreate(savedInstanceState)
-
-        val imageList = mutableStateListOf<ImageClass>()
+        
+        val mediaDeleteFlow = MutableSharedFlow<DeleteMediaVars>()
+        val selectedMedia = mutableStateOf<MediaClass?>(null)
         val loading = mutableStateOf(false)
-
-        val intentCamera =
-            if (checkCameraHardware(this))
-                Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA)
-            else
-                null
-
-
         val getContent = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
             if (it.resultCode != RESULT_OK) {
                 finishAffinity()
@@ -111,26 +110,37 @@ class MainActivity : ComponentActivity() {
         }
 
         this.initContentResolver(contentResolver) {
-            cor {
-                imageListFlow.emit(Unit)
+            cor { updateList.emit(Unit) }
+        }
+
+        cor {
+            mediaDeleteFlow.collect {
+                deleteInProgress = true
+                checkBoxVisible.value = false
+                imageDeleteCounter = it.listUri.size
+
+                it.listUri.forEach { uri ->
+                    setVarsAndDeleteImage(
+                        uri,
+                        it.action
+                    )
+                }
             }
         }
 
-        val selectedImage = mutableStateOf<ImageClass?>(null)
-
         cor {
-
-            imageListFlow.collect {
+            updateList.collect {
 
                 if (!deleteInProgress)
                     cor {
 
                         loading.value = true
 
-                        imageList.clear()
-                        imageList.addAll(contentResolver.queryImageMediaStore())
+                        mediaList.clear()
+                        mediaList.addAll(contentResolver.queryImageMediaStore())
+                        mediaList.addAll(contentResolver.queryVideoMediaStore())
 
-                        delay(10)
+                        delay(100)
 
                         loading.value = false
                         updateNeeded = false
@@ -138,279 +148,108 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        cor {
-            imageList.clear()
-            imageList.addAll(contentResolver.queryImageMediaStore())
-        }
 
         setContent {
             GalleryTheme {
-                // A surface container using the 'background' color from the theme
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = if (selectedImage.value != null) Color.Black else MaterialTheme.colorScheme.background
+                    color = if (selectedMedia.value != null) Color.Black else MaterialTheme.colorScheme.background
                 ) {
                     val scrollState = rememberLazyListState()
-                    val checkBoxVisible = remember { mutableStateOf(false) }
 
-                    Column {
-                        Column(Modifier.padding(16.dp)) {
-                            Row(
-                                modifier = Modifier
-                                    .wrapContentHeight()
-                                    .fillMaxWidth()
-                                    .background(
-                                        if (selectedImage.value == null) MaterialTheme.colorScheme.onSecondary else Color.Transparent,
-                                        RoundedCornerShape(35.dp)
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        FileAndMediaPermission(
+                            navigateToSettingsScreen = {
+
+                                getContent.launch(
+                                    Intent(
+                                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                        Uri.fromParts("package", packageName, null)
                                     )
-                                    .padding(20.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                if (selectedImage.value != null) {
-                                    Icon(
-                                        imageVector = Icons.Rounded.ArrowBack,
-                                        tint = Color.White,
-                                    ) {
-                                        selectedImage.value = null
-                                    }
+                                )
+                            },
+                            onPermissionDenied = {
+                                finishAffinity()
+                            },
+                            onPermissionGranted = {
 
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.baseline_share_24),
-                                        tint = Color.White
-                                    ) {
-                                        selectedImage.value?.uri?.let {
-                                            shareImage(arrayListOf(it))
-                                        }
-                                    }
+                                LaunchedEffect(key1 = true) {
+                                    updateList.emit(Unit)
+                                }
 
-                                    Icon(
-                                        imageVector = Icons.Rounded.Delete,
-                                        tint = Color.White
-                                    ) {
-                                        cor {
-                                            deletePhotoFromExternalStorage(selectedImage.value!!.uri) {
-                                                selectedImage.value = null
-                                            }
-                                        }
+                                if (selectedMedia.value == null) {
+                                    if (loading.value) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier
+                                                .height(100.dp)
+                                                .width(100.dp)
+                                                .align(Alignment.Center),
+                                            color = Color.White
+                                        )
                                     }
                                 }
 
-                                when {
-                                    !checkBoxVisible.value && selectedImage.value == null ->
-                                        Text(
-                                            text = "Gallery",
-                                            fontSize = 20.sp,
-                                            textAlign = TextAlign.Center,
-                                            color = MaterialTheme.colorScheme.onBackground
-                                        )
-                                    checkBoxVisible.value -> {
+                                androidx.compose.animation.AnimatedVisibility(
+                                    visible = !loading.value && selectedMedia.value == null,
+                                    enter = expandVertically(),
+                                    exit = fadeOut()
+                                ) {
+                                    MediaListUI(
+                                        lazyListState = scrollState,
+                                        mediaList = mediaList,
+                                        checkBoxVisible = checkBoxVisible,
+                                    ) {
+                                        selectedMedia.value = it
+                                    }
+                                }
+
+                                androidx.compose.animation.AnimatedVisibility(
+                                    visible = selectedMedia.value != null,
+                                    enter = scaleIn()
+                                ) {
+
+                                    if (selectedMedia.value != null) {
+
                                         BackHandler(enabled = true){
-                                            imageList.forEach {
-                                                it.selected.value = false
-                                            }
-                                            checkBoxVisible.value = false
+                                            selectedMedia.value = null
                                         }
 
-                                        Icon(
-                                            imageVector = Icons.Rounded.Close
-                                        ) {
-                                            imageList.forEach {
-                                                it.selected.value = false
-                                            }
-                                            checkBoxVisible.value = false
-                                        }
-
-                                        Icon(
-                                            painter = painterResource(id = R.drawable.baseline_share_24)
-                                        ) {
-                                            val selectedImageList = imageList.filter { it.selected.value }
-
-                                            if (selectedImageList.isNotEmpty()) {
-
-                                                val uriList = ArrayList<Uri>()
-
-                                                uriList.addAll(selectedImageList.map { it.uri })
-
-                                                shareImage(uriList)
-                                            }
-                                        }
-
-                                        Icon(
-                                            imageVector = Icons.Rounded.Delete
-                                        ) {
-                                            val selectedImageList = imageList.filter { it.selected.value }
-
-                                            if (selectedImageList.isNotEmpty()) {
-
-                                                deleteInProgress = true
-                                                counterImageToDelete = selectedImageList.size
-
-                                                cor {
-                                                    selectedImageList.forEach {
-                                                        deletePhotoFromExternalStorage(it.uri)
-                                                    }
-                                                }
-                                            }
-                                        }
+                                        ImageViewUI(selectedMedia.value!!)
                                     }
                                 }
+
+                                ToolBarUI(
+                                    visible = scrollState.firstVisibleItemScrollOffset == 0 || !scrollState.isScrollInProgress  || checkBoxVisible.value,
+                                    mediaList = mediaList,
+                                    mediaDelete = mediaDeleteFlow,
+                                    selectedMedia = selectedMedia,
+                                    checkBoxVisible = checkBoxVisible,
+                                    backgroundColor =
+                                    if (selectedMedia.value == null) {
+                                        if (scrollState.firstVisibleItemScrollOffset == 0) {
+                                            MaterialTheme.colorScheme.background
+                                        } else {
+                                            MaterialTheme.colorScheme.surface
+                                        }
+                                    }
+                                    else Color.Transparent
+                                )
                             }
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        Box(
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            FileAndMediaPermission(
-                                navigateToSettingsScreen = {
-
-                                    getContent.launch(
-                                        Intent(
-                                            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                                            Uri.fromParts("package", packageName, null)
-                                        )
-                                    )
-                                },
-                                onPermissionDenied = {
-                                     finishAffinity()
-                                },
-                                onPermissionGranted = {
-
-                                    if (firstStart) {
-                                        firstStart = false
-                                        cor {
-                                            imageListFlow.emit(Unit)
-                                        }
-                                    }
-
-                                    androidx.compose.animation.AnimatedVisibility(
-                                        visible = !loading.value && selectedImage.value == null,
-                                        enter = expandVertically(),
-                                        exit = fadeOut()
-                                    ) {
-                                        ImageListUI(
-                                            lazyListState = scrollState,
-                                            imageList = imageList,
-                                            checkBoxVisible = checkBoxVisible,
-                                        ) {
-                                            selectedImage.value = it
-                                        }
-                                    }
-
-                                    if (selectedImage.value == null) {
-
-                                        if (loading.value) {
-                                            CircularProgressIndicator(
-                                                modifier = Modifier
-                                                    .height(100.dp)
-                                                    .width(100.dp)
-                                                    .align(Alignment.Center),
-                                                color = Color.White
-                                            )
-                                        }
-
-                                        if (intentCamera != null) {
-                                            androidx.compose.animation.AnimatedVisibility(
-                                                visible = scrollState.isScrollInProgress,
-                                                modifier = Modifier.align(Alignment.BottomEnd)
-                                            ) {
-                                                FloatingActionButton(
-                                                    modifier = Modifier
-                                                        .padding(16.dp),
-                                                    containerColor = MaterialTheme.colorScheme.onSecondary,
-                                                    onClick = { startActivitySafely(intentCamera) },
-                                                ) {
-                                                    Icon(
-                                                        painter = painterResource(id = R.drawable.baseline_photo_camera_24)
-                                                    )
-                                                }
-                                            }
-
-                                            androidx.compose.animation.AnimatedVisibility(
-                                                visible = !scrollState.isScrollInProgress,
-                                                modifier = Modifier.align(Alignment.BottomEnd)
-                                            ) {
-                                                LargeFloatingActionButton(
-                                                    modifier = Modifier
-                                                        .padding(16.dp),
-                                                    containerColor = MaterialTheme.colorScheme.onSecondary,
-                                                    onClick = { startActivitySafely(intentCamera) },
-                                                ) {
-                                                    Icon(
-                                                        painter = painterResource(id = R.drawable.baseline_photo_camera_24),
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    androidx.compose.animation.AnimatedVisibility(
-                                        visible = selectedImage.value != null,
-                                        enter = scaleIn()
-                                    ) {
-
-                                        if (selectedImage.value != null) {
-
-                                            BackHandler(enabled = true){
-                                                selectedImage.value = null
-                                            }
-
-                                            ImageViewUI(selectedImage.value!!)
-                                        }
-
-                                    }
-                                }
-                            )
-                        }
+                        )
                     }
                 }
             }
         }
     }
 
-    private suspend fun deletePhotoFromExternalStorage(
+    private suspend fun setVarsAndDeleteImage(
         photoUri: Uri,
         actionAfterDelete: (() -> Unit)? = null
     ) {
-
         deletedImageUri = photoUri
         deleteAction = actionAfterDelete
 
-        withContext(Dispatchers.IO) {
-            try {
-                contentResolver.delete(photoUri, null, null)
-            } catch (e: SecurityException) {
-                val intentSender = when {
-                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.R -> {
-                        MediaStore.createDeleteRequest(contentResolver, listOf(photoUri)).intentSender
-                    }
-                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q -> {
-                        val recoverableSecurityException = e as? RecoverableSecurityException
-                        recoverableSecurityException?.userAction?.actionIntent?.intentSender
-                    }
-                    else -> null
-                }
-                intentSender?.let { sender ->
-                    intentSenderLauncher.launch(
-                        IntentSenderRequest.Builder(sender).build()
-                    )
-                }
-            }
-        }
-    }
-
-    private fun shareImage(imageUriArray: ArrayList<Uri>) {
-
-        val intent = Intent(Intent.ACTION_SEND_MULTIPLE)
-
-        intent.type = "image/*"
-        intent.putExtra(Intent.EXTRA_STREAM, imageUriArray)
-        intent.putExtra(Intent.EXTRA_TEXT, "Sharing Image")
-        intent.putExtra(Intent.EXTRA_SUBJECT, "Subject Here")
-
-        startActivity(Intent.createChooser(intent, "Share Via"))
+        contentResolver.deletePhotoFromExternalStorage(photoUri, intentSenderLauncher)
     }
 
     override fun onDestroy() {

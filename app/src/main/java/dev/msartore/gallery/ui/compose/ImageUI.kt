@@ -4,13 +4,18 @@ import android.content.Context
 import android.os.Build
 import android.util.Size
 import androidx.annotation.RequiresApi
+import androidx.compose.animation.*
+import androidx.compose.animation.core.keyframes
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Icon
-import androidx.compose.material3.Checkbox
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -19,58 +24,59 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import dev.msartore.gallery.R
-import dev.msartore.gallery.utils.ImageClass
-import dev.msartore.gallery.utils.cor
-import dev.msartore.gallery.utils.getImageSize
+import dev.msartore.gallery.ui.compose.basic.CheckBox
+import dev.msartore.gallery.utils.MediaClass
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 
+
+@OptIn(ExperimentalAnimationApi::class)
 @RequiresApi(Build.VERSION_CODES.Q)
 @Composable
 fun Context.ImageUI(
-    image: ImageClass,
+    media: MediaClass,
+    mediaList: SnapshotStateList<MediaClass>,
     checkBoxVisible: MutableState<Boolean>,
-    selected: MutableState<Boolean>,
     action: () -> Unit
 ) {
-
     val thumbnail = remember { mutableStateOf<ImageBitmap?>(null) }
     val errorState = remember { mutableStateOf(false) }
 
-    LaunchedEffect(key1 = true) {
-        kotlin.runCatching {
+    LaunchedEffect(key1 = thumbnail.value == null) {
+        runCatching {
             withContext(Dispatchers.IO) {
                 thumbnail.value = applicationContext.contentResolver.loadThumbnail(
-                    image.uri, Size(100, 100), null).asImageBitmap()
+                    media.uri, Size(10, 10), null).asImageBitmap()
 
                 thumbnail.value = applicationContext.contentResolver.loadThumbnail(
-                    image.uri, contentResolver.getImageSize(image = image.uri), null).asImageBitmap()
+                    media.uri, Size(200, 200), null).asImageBitmap()
             }
-            cor {
-                delay(1000)
-                errorState.value = thumbnail.value == null
-            }
+        }.getOrElse {
+            errorState.value = true
         }
     }
 
     if (thumbnail.value != null) {
-
         Box(
             modifier = Modifier
-                .clip(RoundedCornerShape(16.dp))
                 .wrapContentSize()
                 .pointerInput(Unit) {
                     detectTapGestures(
                         onLongPress = {
                             checkBoxVisible.value = true
-                            selected.value = true
-                        },
+                            media.selected.value = true
+                      },
                         onTap = {
+
                             if (checkBoxVisible.value) {
-                                selected.value = !selected.value
+                                media.selected.value = !media.selected.value
+
+                                if (!mediaList.any { it.selected.value }) {
+                                    checkBoxVisible.value = false
+                                }
                             } else {
                                 action.invoke()
                             }
@@ -78,32 +84,59 @@ fun Context.ImageUI(
                     )
                 }
         ) {
-
-            androidx.compose.foundation.Image(
-                modifier = Modifier
-                    .padding(20.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .width(200.dp)
-                    .height(200.dp),
-                bitmap = thumbnail.value!!,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-            )
-
-            if (checkBoxVisible.value)
-                Checkbox(
+            AnimatedContent(
+                targetState = media.selected.value,
+                transitionSpec = {
+                    scaleIn(animationSpec = tween(150)) with
+                            scaleOut(animationSpec = tween(150)) using
+                            SizeTransform { initialSize, targetSize ->
+                                if (targetState) {
+                                    keyframes {
+                                        // Expand horizontally first.
+                                        IntSize(targetSize.width, initialSize.height) at 150
+                                        durationMillis = 300
+                                    }
+                                } else {
+                                    keyframes {
+                                        // Shrink vertically first.
+                                        IntSize(initialSize.width, targetSize.height) at 150
+                                        durationMillis = 300
+                                    }
+                                }
+                            }
+                }
+            ) { targetExpanded ->
+                Image(
                     modifier = Modifier
-                        .background(Color.Transparent, RoundedCornerShape(16.dp)),
-                    checked = selected.value,
-                    onCheckedChange = {
-                        selected.value = !selected.value
-                    }
+                        .width(100.dp)
+                        .height(100.dp)
+                        .background(if (targetExpanded) MaterialTheme.colorScheme.background else Color.Transparent)
+                        .padding(if (targetExpanded) 10.dp else 0.dp)
+                        .clip(if (targetExpanded) RoundedCornerShape(16.dp) else RoundedCornerShape(0.dp)),
+                    bitmap = thumbnail.value!!,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
                 )
+            }
+
+            AnimatedVisibility(
+                visible = media.selected.value,
+                enter = scaleIn(),
+                exit = scaleOut(),
+            ) {
+                 CheckBox()
+            }
         }
     }
     else {
         if (errorState.value)
-            Icon(painter = painterResource(id = R.drawable.baseline_error_24), contentDescription = null)
+            Icon(
+                modifier = Modifier
+                    .width(100.dp)
+                    .height(100.dp),
+                painter = painterResource(id = R.drawable.baseline_broken_image_24),
+                contentDescription = null
+            )
         else
             Spacer(
                 modifier = Modifier
@@ -111,4 +144,5 @@ fun Context.ImageUI(
                     .height(200.dp)
             )
     }
+
 }
