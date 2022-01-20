@@ -29,6 +29,8 @@ import androidx.compose.ui.unit.dp
 import dev.msartore.gallery.R
 import dev.msartore.gallery.ui.compose.basic.CheckBox
 import dev.msartore.gallery.utils.MediaClass
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 
 @OptIn(ExperimentalAnimationApi::class)
@@ -45,11 +47,13 @@ fun Context.ImageUI(
 
     LaunchedEffect(key1 = thumbnail.value == null) {
         runCatching {
-            thumbnail.value = applicationContext.contentResolver.loadThumbnail(
-                media.uri, Size(10, 10), null).asImageBitmap()
+            withContext(Dispatchers.IO) {
+                thumbnail.value = applicationContext.contentResolver.loadThumbnail(
+                    media.uri, Size(10, 10), null).asImageBitmap()
 
-            thumbnail.value = applicationContext.contentResolver.loadThumbnail(
-                media.uri, Size(200, 200), null).asImageBitmap()
+                thumbnail.value = applicationContext.contentResolver.loadThumbnail(
+                    media.uri, Size(200, 200), null).asImageBitmap()
+            }
         }.getOrElse {
             errorState.value = true
         }
@@ -136,8 +140,8 @@ fun Context.ImageUI(
         else
             Spacer(
                 modifier = Modifier
-                    .width(100.dp)
-                    .height(100.dp)
+                    .width(200.dp)
+                    .height(200.dp)
             )
     }
 
