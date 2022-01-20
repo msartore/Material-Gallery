@@ -38,7 +38,6 @@ import coil.annotation.ExperimentalCoilApi
 import dev.msartore.gallery.ui.compose.*
 import dev.msartore.gallery.ui.theme.GalleryTheme
 import dev.msartore.gallery.utils.*
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
@@ -107,7 +106,7 @@ class MainActivity : ComponentActivity() {
                 finishAffinity()
             }
         }
-        val toolbarVisible = mutableStateOf(false)
+        val toolbarVisible = mutableStateOf(true)
         this.initContentResolver(contentResolver) {
             cor { updateList.emit(Unit) }
         }
@@ -138,8 +137,7 @@ class MainActivity : ComponentActivity() {
                         mediaList.clear()
                         mediaList.addAll(contentResolver.queryImageMediaStore())
                         mediaList.addAll(contentResolver.queryVideoMediaStore())
-
-                        delay(100)
+                        mediaList.sortByDescending { it.date }
 
                         loading.value = false
                         updateNeeded = false
@@ -224,22 +222,25 @@ class MainActivity : ComponentActivity() {
 
                                     if (selectedMedia.value != null) {
 
-                                        BackHandler(enabled = true){
-                                            selectedMedia.value = null
-                                        }
-
-                                        VideoViewerUI(selectedMedia.value!!.uri) {
-                                            toolbarVisible.value =
-                                                when (it) {
-                                                    VideoControllerVisibility.VISIBLE.value -> false
-                                                    else -> true
-                                                }
-                                        }
+                                        VideoViewerUI(
+                                            selectedMedia.value!!.uri,
+                                            onBackPressedCallback = {
+                                                selectedMedia.value = null
+                                                toolbarVisible.value = true
+                                            },
+                                            onControllerVisibilityChange = {
+                                                toolbarVisible.value =
+                                                    when (it) {
+                                                        VideoControllerVisibility.VISIBLE.value -> false
+                                                        else -> true
+                                                    }
+                                            }
+                                        )
                                     }
                                 }
 
                                 ToolBarUI(
-                                    visible = (scrollState.firstVisibleItemScrollOffset == 0 || !scrollState.isScrollInProgress  || checkBoxVisible.value) && toolbarVisible.value,
+                                    visible = ((scrollState.firstVisibleItemScrollOffset == 0) || !scrollState.isScrollInProgress || checkBoxVisible.value) && toolbarVisible.value,
                                     mediaList = mediaList,
                                     mediaDelete = mediaDeleteFlow,
                                     selectedMedia = selectedMedia,

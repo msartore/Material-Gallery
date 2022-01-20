@@ -22,13 +22,13 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.time.Duration
 
 open class MediaClass(
     val uri: Uri,
     val name: String,
     val size: Int,
-    val duration: Duration? = null,
+    val date: Long,
+    val duration: Long? = null,
     var selected: MutableState<Boolean> = mutableStateOf(false)
 )
 
@@ -65,7 +65,8 @@ fun ContentResolver.queryImageMediaStore(): List<MediaClass> {
     val projection = arrayOf(
         MediaStore.Images.Media._ID,
         MediaStore.Images.Media.DISPLAY_NAME,
-        MediaStore.Images.Media.SIZE
+        MediaStore.Images.Media.SIZE,
+        MediaStore.Images.Media.DATE_TAKEN,
     )
 
     val query = this.query(
@@ -82,12 +83,14 @@ fun ContentResolver.queryImageMediaStore(): List<MediaClass> {
         val nameColumn =
             cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DISPLAY_NAME)
         val sizeColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.SIZE)
+        val dateColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATE_TAKEN)
 
         while (cursor.moveToNext()) {
 
             val id = cursor.getLong(idColumn)
             val name = cursor.getString(nameColumn)
             val size = cursor.getInt(sizeColumn)
+            val date = cursor.getLong(dateColumn)
 
             val contentUri: Uri = ContentUris.withAppendedId(
                 MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
@@ -96,7 +99,7 @@ fun ContentResolver.queryImageMediaStore(): List<MediaClass> {
 
             // Stores column values and the contentUri in a local object
             // that represents the media file.
-            imageList.add(MediaClass(contentUri, name, size))
+            imageList.add(MediaClass(contentUri, name, size, date))
         }
     }
 
@@ -122,8 +125,9 @@ fun ContentResolver.queryVideoMediaStore(): List<MediaClass> {
         MediaStore.Video.Media._ID,
         MediaStore.Video.Media.DISPLAY_NAME,
         MediaStore.Video.Media.SIZE,
-        MediaStore.Video.Media.DURATION
-    )
+        MediaStore.Video.Media.DURATION,
+        MediaStore.Images.Media.DATE_TAKEN,
+        )
 
     val query = this.query(
         collection,
@@ -140,13 +144,15 @@ fun ContentResolver.queryVideoMediaStore(): List<MediaClass> {
             cursor.getColumnIndexOrThrow(MediaStore.Video.Media.DISPLAY_NAME)
         val sizeColumn = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.SIZE)
         val durationColumn = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.DURATION)
+        val dateColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATE_TAKEN)
 
         while (cursor.moveToNext()) {
 
             val id = cursor.getLong(idColumn)
             val name = cursor.getString(nameColumn)
             val size = cursor.getInt(sizeColumn)
-            val duration = Duration.ofMillis(cursor.getLong(durationColumn))
+            val duration = cursor.getLong(durationColumn)
+            val date = cursor.getLong(dateColumn)
 
             val contentUri: Uri = ContentUris.withAppendedId(
                 MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
@@ -156,7 +162,7 @@ fun ContentResolver.queryVideoMediaStore(): List<MediaClass> {
             // Stores column
             // values and the contentUri in a local object
             // that represents the media file.
-            videoList.add(MediaClass(contentUri, name, size, duration))
+            videoList.add(MediaClass(contentUri, name, size, date, duration))
         }
     }
 

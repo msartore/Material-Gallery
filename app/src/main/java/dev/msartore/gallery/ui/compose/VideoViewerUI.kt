@@ -2,6 +2,7 @@ package dev.msartore.gallery.ui.compose
 
 import android.content.Context
 import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
@@ -17,10 +18,17 @@ import com.google.android.exoplayer2.ui.PlayerView
 @Composable
 fun VideoViewerUI(
     uri: Uri,
-    onControllerVisibilityChange: (Int) -> Unit
+    onControllerVisibilityChange: (Int) -> Unit,
+    onBackPressedCallback: () -> Unit
 ) {
     val context = LocalContext.current
     val exoPlayer = remember { getExoPlayer(context, uri) }
+
+    BackHandler(enabled = true){
+        exoPlayer.release()
+        onBackPressedCallback.invoke()
+    }
+
     AndroidView(
         modifier = Modifier
             .fillMaxSize()
@@ -32,7 +40,7 @@ fun VideoViewerUI(
                     onControllerVisibilityChange(it)
                 }
             }
-        },
+        }
     )
 }
 
