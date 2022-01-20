@@ -14,6 +14,7 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -156,88 +157,85 @@ class MainActivity : ComponentActivity() {
                 ) {
                     val scrollState = rememberLazyListState()
 
-                    Column {
-                        Box(modifier = Modifier.fillMaxSize()) {
-                            FileAndMediaPermission(
-                                navigateToSettingsScreen = {
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        FileAndMediaPermission(
+                            navigateToSettingsScreen = {
 
-                                    getContent.launch(
-                                        Intent(
-                                            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                                            Uri.fromParts("package", packageName, null)
-                                        )
+                                getContent.launch(
+                                    Intent(
+                                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                        Uri.fromParts("package", packageName, null)
                                     )
-                                },
-                                onPermissionDenied = {
-                                    finishAffinity()
-                                },
-                                onPermissionGranted = {
+                                )
+                            },
+                            onPermissionDenied = {
+                                finishAffinity()
+                            },
+                            onPermissionGranted = {
 
-                                    LaunchedEffect(key1 = true) {
-                                        updateList.emit(Unit)
-                                    }
-
-                                    if (selectedMedia.value == null) {
-                                        if (loading.value) {
-                                            CircularProgressIndicator(
-                                                modifier = Modifier
-                                                    .height(100.dp)
-                                                    .width(100.dp)
-                                                    .align(Alignment.Center),
-                                                color = Color.White
-                                            )
-                                        }
-                                    }
-
-                                    androidx.compose.animation.AnimatedVisibility(
-                                        visible = selectedMedia.value == null,
-                                        enter = expandVertically(),
-                                        exit = fadeOut()
-                                    ) {
-                                        if (!loading.value)
-                                            MediaListUI(
-                                                lazyListState = scrollState,
-                                                mediaList = mediaList,
-                                                checkBoxVisible = checkBoxVisible,
-                                            ) {
-                                                selectedMedia.value = it
-                                            }
-                                    }
-
-                                    androidx.compose.animation.AnimatedVisibility(
-                                        visible = selectedMedia.value != null,
-                                        enter = scaleIn()
-                                    ) {
-
-                                        if (selectedMedia.value != null) {
-
-                                            BackHandler(enabled = true){
-                                                selectedMedia.value = null
-                                            }
-
-                                            ImageViewUI(selectedMedia.value!!)
-                                        }
-                                    }
-
-                                    ToolBarUI(
-                                        visible = scrollState.firstVisibleItemScrollOffset == 0 || !scrollState.isScrollInProgress  || checkBoxVisible.value,
-                                        mediaList = mediaList,
-                                        mediaDelete = mediaDeleteFlow,
-                                        selectedMedia = selectedMedia,
-                                        checkBoxVisible = checkBoxVisible,
-                                        backgroundColor =
-                                            if (selectedMedia.value == null) {
-                                                if (scrollState.firstVisibleItemScrollOffset == 0) {
-                                                    MaterialTheme.colorScheme.background
-                                                } else {
-                                                    MaterialTheme.colorScheme.surface
-                                                }
-                                            }
-                                            else Color.Transparent
-                                    )
+                                LaunchedEffect(key1 = true) {
+                                    updateList.emit(Unit)
                                 }
-                            )
-                        }
+
+                                if (selectedMedia.value == null) {
+                                    if (loading.value) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier
+                                                .height(100.dp)
+                                                .width(100.dp)
+                                                .align(Alignment.Center),
+                                            color = Color.White
+                                        )
+                                    }
+                                }
+
+                                androidx.compose.animation.AnimatedVisibility(
+                                    visible = !loading.value && selectedMedia.value == null,
+                                    enter = expandVertically(),
+                                    exit = fadeOut()
+                                ) {
+                                    MediaListUI(
+                                        lazyListState = scrollState,
+                                        mediaList = mediaList,
+                                        checkBoxVisible = checkBoxVisible,
+                                    ) {
+                                        selectedMedia.value = it
+                                    }
+                                }
+
+                                androidx.compose.animation.AnimatedVisibility(
+                                    visible = selectedMedia.value != null,
+                                    enter = scaleIn()
+                                ) {
+
+                                    if (selectedMedia.value != null) {
+
+                                        BackHandler(enabled = true){
+                                            selectedMedia.value = null
+                                        }
+
+                                        ImageViewUI(selectedMedia.value!!)
+                                    }
+                                }
+
+                                ToolBarUI(
+                                    visible = scrollState.firstVisibleItemScrollOffset == 0 || !scrollState.isScrollInProgress  || checkBoxVisible.value,
+                                    mediaList = mediaList,
+                                    mediaDelete = mediaDeleteFlow,
+                                    selectedMedia = selectedMedia,
+                                    checkBoxVisible = checkBoxVisible,
+                                    backgroundColor =
+                                    if (selectedMedia.value == null) {
+                                        if (scrollState.firstVisibleItemScrollOffset == 0) {
+                                            MaterialTheme.colorScheme.background
+                                        } else {
+                                            MaterialTheme.colorScheme.surface
+                                        }
+                                    }
+                                    else Color.Transparent
+                                )
+                            }
+                        )
                     }
                 }
             }
