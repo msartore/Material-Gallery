@@ -7,7 +7,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
@@ -51,11 +50,12 @@ class MainActivity : ComponentActivity() {
     private var contentObserver: ContentObserver? = null
     private var deletedImageUri: Uri? = null
     private var deleteAction: (() -> Unit)? = null
-    private var mediaListUpdate = false
+    private val updateList = MutableSharedFlow<Unit>()
     private var deleteInProgress = false
     private var updateNeeded = false
-    private var counterImageToDelete = 0
+    private var imageDeleteCounter = 0
     private val mediaList = SnapshotStateList<MediaClass>()
+    private val checkBoxVisible = mutableStateOf(false)
     private var intentSenderLauncher: ActivityResultLauncher<IntentSenderRequest> =
         registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { activityResult ->
             if (activityResult.resultCode == RESULT_OK) {
@@ -68,18 +68,30 @@ class MainActivity : ComponentActivity() {
                 deleteAction?.invoke()
 
                 updateNeeded = true
-            }
 
-            if (counterImageToDelete > 0)
-                counterImageToDelete -= 1
-
-            Log.d("MainActivity", "counterImageToDelete: $counterImageToDelete updateNeeded: $updateNeeded")
-
-            if (updateNeeded && counterImageToDelete == 0) {
                 runCatching {
                     mediaList.removeIf { it.uri == deletedImageUri }
+                }.getOrElse {
+                    it.printStackTrace()
                 }
+            }
+
+            imageDeleteCounter -= 1
+
+            if (imageDeleteCounter == 0) {
+
+                mediaList.forEach {
+                    it.selected.value = false
+                }
+                checkBoxVisible.value = false
                 deleteInProgress = false
+
+                if (updateNeeded) {
+                    updateNeeded = false
+                    lifecycleScope.launch {
+                        updateList.emit(Unit)
+                    }
+                }
             }
         }
 
@@ -87,10 +99,9 @@ class MainActivity : ComponentActivity() {
 
         super.onCreate(savedInstanceState)
         
-        val mediaDelete = MutableSharedFlow<DeleteMediaVars>()
+        val mediaDeleteFlow = MutableSharedFlow<DeleteMediaVars>()
         val selectedMedia = mutableStateOf<MediaClass?>(null)
         val loading = mutableStateOf(false)
-        val checkBoxVisible = mutableStateOf(false)
         val getContent = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
             if (it.resultCode != RESULT_OK) {
                 finishAffinity()
@@ -98,14 +109,14 @@ class MainActivity : ComponentActivity() {
         }
 
         this.initContentResolver(contentResolver) {
-            mediaListUpdate = !mediaListUpdate
+            cor { updateList.emit(Unit) }
         }
 
         cor {
-            mediaDelete.collect {
+            mediaDeleteFlow.collect {
                 deleteInProgress = true
                 checkBoxVisible.value = false
-                counterImageToDelete = it.listUri.size
+                imageDeleteCounter = it.listUri.size
 
                 it.listUri.forEach { uri ->
                     setVarsAndDeleteImage(
@@ -116,6 +127,27 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+        cor {
+            updateList.collect {
+
+                if (!deleteInProgress)
+                    cor {
+
+                        loading.value = true
+
+                        mediaList.clear()
+                        mediaList.addAll(contentResolver.queryImageMediaStore())
+                        mediaList.addAll(contentResolver.queryVideoMediaStore())
+
+                        delay(100)
+
+                        loading.value = false
+                        updateNeeded = false
+                    }
+            }
+        }
+
+
         setContent {
             GalleryTheme {
                 Surface(
@@ -123,8 +155,6 @@ class MainActivity : ComponentActivity() {
                     color = if (selectedMedia.value != null) Color.Black else MaterialTheme.colorScheme.background
                 ) {
                     val scrollState = rememberLazyListState()
-
-                    Log.d("Gallery", "GalleryActivity onCreate")
 
                     Column {
                         Box(modifier = Modifier.fillMaxSize()) {
@@ -143,24 +173,8 @@ class MainActivity : ComponentActivity() {
                                 },
                                 onPermissionGranted = {
 
-                                    LaunchedEffect(key1 = mediaListUpdate) {
-
-                                        Log.d("MainActivity", "mediaListUpdate: $mediaListUpdate")
-
-                                        if (!deleteInProgress)
-                                            cor {
-
-                                                loading.value = true
-
-                                                mediaList.clear()
-                                                mediaList.addAll(contentResolver.queryImageMediaStore())
-                                                mediaList.addAll(contentResolver.queryVideoMediaStore())
-
-                                                delay(100)
-
-                                                loading.value = false
-                                                updateNeeded = false
-                                            }
+                                    LaunchedEffect(key1 = true) {
+                                        updateList.emit(Unit)
                                     }
 
                                     if (selectedMedia.value == null) {
@@ -176,17 +190,18 @@ class MainActivity : ComponentActivity() {
                                     }
 
                                     androidx.compose.animation.AnimatedVisibility(
-                                        visible = !loading.value && selectedMedia.value == null,
+                                        visible = selectedMedia.value == null,
                                         enter = expandVertically(),
                                         exit = fadeOut()
                                     ) {
-                                        MediaListUI(
-                                            lazyListState = scrollState,
-                                            mediaList = mediaList,
-                                            checkBoxVisible = checkBoxVisible,
-                                        ) {
-                                            selectedMedia.value = it
-                                        }
+                                        if (!loading.value)
+                                            MediaListUI(
+                                                lazyListState = scrollState,
+                                                mediaList = mediaList,
+                                                checkBoxVisible = checkBoxVisible,
+                                            ) {
+                                                selectedMedia.value = it
+                                            }
                                     }
 
                                     androidx.compose.animation.AnimatedVisibility(
@@ -207,7 +222,7 @@ class MainActivity : ComponentActivity() {
                                     ToolBarUI(
                                         visible = scrollState.firstVisibleItemScrollOffset == 0 || !scrollState.isScrollInProgress  || checkBoxVisible.value,
                                         mediaList = mediaList,
-                                        mediaDelete = mediaDelete,
+                                        mediaDelete = mediaDeleteFlow,
                                         selectedMedia = selectedMedia,
                                         checkBoxVisible = checkBoxVisible,
                                         backgroundColor =

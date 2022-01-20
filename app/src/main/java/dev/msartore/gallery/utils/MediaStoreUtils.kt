@@ -15,7 +15,6 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
 import android.provider.MediaStore.MediaColumns
-import android.util.Log
 import android.util.Size
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.IntentSenderRequest
@@ -34,8 +33,13 @@ open class MediaClass(
 )
 
 data class DatabaseInfo(
-    var dateAdded : Long = 0L,
-    var countImage : Int = 0,
+    var imageDBInfo: MediaInfo = MediaInfo(),
+    var videoDBInfo: MediaInfo = MediaInfo()
+)
+
+data class MediaInfo(
+    var dateMedia : Long = 0L,
+    var countMedia : Int = 0,
 )
 
 data class DeleteMediaVars(
@@ -179,11 +183,14 @@ fun Context.initContentResolver(
 
             super.onChange(selfChange)
 
-            Log.d("ContentObserver", "onChange")
-
             val lastDatabaseInfo = readLastDateFromMediaStore(context)
 
-            if (lastDatabaseInfo.dateAdded > databaseInfo.dateAdded || lastDatabaseInfo.countImage > databaseInfo.countImage) {
+            if (
+                lastDatabaseInfo.videoDBInfo.dateMedia > databaseInfo.videoDBInfo.dateMedia ||
+                lastDatabaseInfo.videoDBInfo.countMedia != databaseInfo.videoDBInfo.countMedia ||
+                lastDatabaseInfo.imageDBInfo.dateMedia > databaseInfo.imageDBInfo.dateMedia ||
+                lastDatabaseInfo.imageDBInfo.countMedia != databaseInfo.imageDBInfo.countMedia
+            ) {
 
                 databaseInfo = lastDatabaseInfo
 
@@ -235,15 +242,28 @@ suspend fun ContentResolver.deletePhotoFromExternalStorage(
 
 private fun readLastDateFromMediaStore(context: Context): DatabaseInfo {
 
-    val cursor: Cursor =
+    val cursorImage =
         context.contentResolver.query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, null, null, null, "date_added DESC")!!
+    val cursorVideo =
+        context.contentResolver.query(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, null, null, null, "date_added DESC")!!
+
+    val result = DatabaseInfo()
+
+    result.imageDBInfo = checkMediaDate(cursorImage)
+    result.videoDBInfo = checkMediaDate(cursorVideo)
+
+    return result
+}
+
+private fun checkMediaDate(cursor: Cursor): MediaInfo {
+
     var dateAdded: Long = -1
 
     if (cursor.moveToNext()) {
         dateAdded = cursor.getLong(cursor.getColumnIndexOrThrow(MediaColumns.DATE_ADDED))
     }
 
-    val result = DatabaseInfo(dateAdded, cursor.count)
+    val result = MediaInfo(dateAdded, cursor.count)
 
     cursor.close()
 

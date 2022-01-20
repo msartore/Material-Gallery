@@ -2,7 +2,6 @@ package dev.msartore.gallery.ui.compose
 
 import android.content.Context
 import android.os.Build
-import android.util.Log
 import android.util.Size
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.*
@@ -65,12 +64,8 @@ fun Context.ImageUI(
                         onLongPress = {
                             checkBoxVisible.value = true
                             media.selected.value = true
-
-                            Log.d("ImageUI", "Long press on image ${media.selected.value}")
-                        },
+                      },
                         onTap = {
-
-                            Log.d("ImageUI", "1 ${checkBoxVisible.value} ${media.selected.value}")
 
                             if (checkBoxVisible.value) {
                                 media.selected.value = !media.selected.value
@@ -78,7 +73,6 @@ fun Context.ImageUI(
                                 if (!mediaList.any { it.selected.value }) {
                                     checkBoxVisible.value = false
                                 }
-                                Log.d("ImageUI", "2 ${checkBoxVisible.value} ${media.selected.value}")
                             } else {
                                 action.invoke()
                             }
