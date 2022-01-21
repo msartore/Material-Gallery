@@ -26,7 +26,7 @@ fun CheckBox() {
         Icon(
             imageVector = Icons.Rounded.Check,
             tint = if (androidx.compose.material.MaterialTheme.colors.isLight) Color.Black else Color.White,
-            contentDescription = ""
+            contentDescription = null
         )
     }
 }

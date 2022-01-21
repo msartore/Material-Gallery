@@ -211,7 +211,7 @@ class MainActivity : ComponentActivity() {
                                             selectedMedia.value = null
                                         }
 
-                                        ImageViewerUI(selectedMedia.value!!)
+                                        contentResolver.ImageViewerUI(selectedMedia.value!!)
                                     }
                                 }
 

@@ -78,7 +78,7 @@ fun ContentResolver.queryImageMediaStore(): List<MediaClass> {
     )
 
     query?.use { cursor ->
-        // Cache column indices.
+
         val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID)
         val nameColumn =
             cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DISPLAY_NAME)
@@ -97,8 +97,6 @@ fun ContentResolver.queryImageMediaStore(): List<MediaClass> {
                 id
             )
 
-            // Stores column values and the contentUri in a local object
-            // that represents the media file.
             imageList.add(MediaClass(contentUri, name, size, date))
         }
     }
@@ -138,7 +136,7 @@ fun ContentResolver.queryVideoMediaStore(): List<MediaClass> {
     )
 
     query?.use { cursor ->
-        // Cache column indices.
+
         val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Video.Media._ID)
         val nameColumn =
             cursor.getColumnIndexOrThrow(MediaStore.Video.Media.DISPLAY_NAME)
@@ -159,9 +157,6 @@ fun ContentResolver.queryVideoMediaStore(): List<MediaClass> {
                 id
             )
 
-            // Stores column
-            // values and the contentUri in a local object
-            // that represents the media file.
             videoList.add(MediaClass(contentUri, name, size, date, duration))
         }
     }
