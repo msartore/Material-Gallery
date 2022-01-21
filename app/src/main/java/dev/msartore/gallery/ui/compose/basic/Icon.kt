@@ -19,76 +19,43 @@ import androidx.compose.ui.unit.dp
 fun Icon(
     modifier: Modifier = Modifier,
     tint: Color = LocalContentColor.current,
-    imageVector: ImageVector,
+    id: Int? = null,
+    painter: Painter? = null,
+    imageVector: ImageVector? = null,
     shadowEnabled: Boolean = true,
     contentDescription: String? = null,
     onClick: (() -> Unit)? = null,
 ) {
+
+    var localModifier = modifier
+
     if (shadowEnabled)
-        modifier.shadow(shape = RoundedCornerShape(16.dp), elevation = 50.dp)
+        localModifier = localModifier.shadow(shape = RoundedCornerShape(16.dp), elevation = 50.dp)
 
     if (onClick != null)
-        modifier
+        localModifier = localModifier
             .clip(RoundedCornerShape(35.dp))
             .clickable { onClick.invoke() }
             .padding(8.dp)
 
-    Icon(
-        modifier = modifier,
-        tint = tint,
-        imageVector = imageVector,
-        contentDescription = contentDescription
-    )
-}
-
-@Composable
-fun Icon(
-    modifier: Modifier = Modifier,
-    tint: Color = LocalContentColor.current,
-    id: Int,
-    shadowEnabled: Boolean = true,
-    contentDescription: String? = null,
-    onClick: (() -> Unit)? = null,
-) {
-    if (shadowEnabled)
-        modifier.shadow(shape = RoundedCornerShape(16.dp), elevation = 50.dp)
-
-    if (onClick != null)
-        modifier
-            .clip(RoundedCornerShape(35.dp))
-            .clickable { onClick.invoke() }
-            .padding(8.dp)
-
-    Icon(
-        modifier = modifier,
-        tint = tint,
-        painter = painterResource(id = id),
-        contentDescription = contentDescription
-    )
-}
-
-@Composable
-fun Icon(
-    modifier: Modifier = Modifier,
-    tint: Color = LocalContentColor.current,
-    painter: Painter,
-    shadowEnabled: Boolean = true,
-    contentDescription: String? = null,
-    onClick: (() -> Unit)? = null,
-) {
-    if (shadowEnabled)
-        Modifier.shadow(shape = RoundedCornerShape(16.dp), elevation = 50.dp)
-
-    if (onClick != null)
-        modifier
-            .clip(RoundedCornerShape(35.dp))
-            .clickable { onClick.invoke() }
-            .padding(8.dp)
-
-    Icon(
-        modifier = modifier,
-        tint = tint,
-        painter = painter,
-        contentDescription = contentDescription
-    )
+    when {
+        imageVector != null -> Icon(
+            modifier = localModifier,
+            tint = tint,
+            imageVector = imageVector,
+            contentDescription = contentDescription
+        )
+        painter != null -> Icon(
+            modifier = localModifier,
+            tint = tint,
+            painter = painter,
+            contentDescription = contentDescription
+        )
+        id != null -> Icon(
+            modifier = localModifier,
+            tint = tint,
+            painter = painterResource(id),
+            contentDescription = contentDescription
+        )
+    }
 }
