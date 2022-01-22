@@ -13,10 +13,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.ExperimentalAnimationApi
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
+import androidx.compose.animation.*
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -38,6 +35,7 @@ import coil.annotation.ExperimentalCoilApi
 import dev.msartore.gallery.ui.compose.*
 import dev.msartore.gallery.ui.theme.GalleryTheme
 import dev.msartore.gallery.utils.*
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
@@ -83,6 +81,7 @@ class MainActivity : ComponentActivity() {
                 mediaList.forEach {
                     it.selected.value = false
                 }
+                
                 checkBoxVisible.value = false
                 deleteInProgress = false
 
@@ -139,12 +138,13 @@ class MainActivity : ComponentActivity() {
                         mediaList.addAll(contentResolver.queryVideoMediaStore())
                         mediaList.sortByDescending { it.date }
 
+                        delay(10)
+
                         loading.value = false
                         updateNeeded = false
                     }
             }
         }
-
 
         setContent {
             GalleryTheme {
@@ -173,6 +173,21 @@ class MainActivity : ComponentActivity() {
                                     updateList.emit(Unit)
                                 }
 
+                                AnimatedVisibility(
+                                    visible = selectedMedia.value == null,
+                                    enter = expandVertically(),
+                                    exit = fadeOut()
+                                ) {
+                                    if (!loading.value)
+                                        MediaListUI(
+                                            lazyListState = scrollState,
+                                            mediaList = mediaList,
+                                            checkBoxVisible = checkBoxVisible,
+                                        ) {
+                                            selectedMedia.value = it
+                                        }
+                                }
+
                                 if (selectedMedia.value == null) {
                                     if (loading.value) {
                                         CircularProgressIndicator(
@@ -185,21 +200,7 @@ class MainActivity : ComponentActivity() {
                                     }
                                 }
 
-                                androidx.compose.animation.AnimatedVisibility(
-                                    visible = !loading.value && selectedMedia.value == null,
-                                    enter = expandVertically(),
-                                    exit = fadeOut()
-                                ) {
-                                    MediaListUI(
-                                        lazyListState = scrollState,
-                                        mediaList = mediaList,
-                                        checkBoxVisible = checkBoxVisible,
-                                    ) {
-                                        selectedMedia.value = it
-                                    }
-                                }
-
-                                androidx.compose.animation.AnimatedVisibility(
+                                AnimatedVisibility(
                                     visible = selectedMedia.value != null && selectedMedia.value?.duration == null,
                                     enter = scaleIn()
                                 ) {
@@ -214,7 +215,7 @@ class MainActivity : ComponentActivity() {
                                     }
                                 }
 
-                                androidx.compose.animation.AnimatedVisibility(
+                                AnimatedVisibility(
                                     visible = selectedMedia.value != null && selectedMedia.value?.duration != null,
                                     enter = scaleIn()
                                 ) {
