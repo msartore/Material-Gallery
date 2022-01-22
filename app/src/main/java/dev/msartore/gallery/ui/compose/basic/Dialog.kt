@@ -19,6 +19,7 @@ import androidx.compose.ui.window.DialogProperties
 fun Dialog(
     title: String,
     text: String,
+    closeOnClick: Boolean = true,
     onConfirm: () -> Unit,
     onCancel: () -> Unit = {},
     confirmText: String = "Confirm",
@@ -64,7 +65,8 @@ fun Dialog(
                             .clip(RoundedCornerShape(16.dp))
                             .clickable {
                                 onCancel.invoke()
-                                status.value = false
+                                if (closeOnClick)
+                                    status.value = false
                             }
                             .padding(8.dp),
                         text = cancelText,
@@ -78,7 +80,8 @@ fun Dialog(
                             .clip(RoundedCornerShape(16.dp))
                             .clickable {
                                 onConfirm.invoke()
-                                status.value = false
+                                if (closeOnClick)
+                                    status.value = false
                             }
                             .padding(8.dp),
                         text = confirmText,

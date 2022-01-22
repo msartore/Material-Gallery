@@ -46,15 +46,15 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalCoilApi::class, ExperimentalAnimationApi::class, ExperimentalFoundationApi::class)
 class MainActivity : ComponentActivity() {
 
-    private var contentObserver: ContentObserver? = null
-    private var deletedImageUri: Uri? = null
-    private var deleteAction: (() -> Unit)? = null
-    private val updateList = MutableSharedFlow<Unit>()
+    private var imageDeleteCounter = 0
     private var deleteInProgress = false
     private var updateNeeded = false
-    private var imageDeleteCounter = 0
-    private val mediaList = SnapshotStateList<MediaClass>()
+    private var deletedImageUri: Uri? = null
+    private var deleteAction: (() -> Unit)? = null
+    private var contentObserver: ContentObserver? = null
+    private val updateList = MutableSharedFlow<Unit>()
     private val checkBoxVisible = mutableStateOf(false)
+    private val mediaList = SnapshotStateList<MediaClass>()
     private var intentSenderLauncher: ActivityResultLauncher<IntentSenderRequest> =
         registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { activityResult ->
             if (activityResult.resultCode == RESULT_OK) {
@@ -64,6 +64,7 @@ class MainActivity : ComponentActivity() {
                         setVarsAndDeleteImage(deletedImageUri ?: return@launch)
                     }
                 }
+
                 deleteAction?.invoke()
 
                 updateNeeded = true
@@ -131,7 +132,6 @@ class MainActivity : ComponentActivity() {
 
                 if (!deleteInProgress)
                     cor {
-
                         loading.value = true
 
                         mediaList.clear()
@@ -155,9 +155,9 @@ class MainActivity : ComponentActivity() {
                     val scrollState = rememberLazyListState()
 
                     Box(modifier = Modifier.fillMaxSize()) {
+
                         FileAndMediaPermission(
                             navigateToSettingsScreen = {
-
                                 getContent.launch(
                                     Intent(
                                         Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
@@ -169,7 +169,6 @@ class MainActivity : ComponentActivity() {
                                 finishAffinity()
                             },
                             onPermissionGranted = {
-
                                 LaunchedEffect(key1 = true) {
                                     updateList.emit(Unit)
                                 }

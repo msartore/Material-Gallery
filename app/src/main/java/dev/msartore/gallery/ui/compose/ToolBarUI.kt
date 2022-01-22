@@ -50,8 +50,12 @@ fun Activity.ToolBarUI(
 
     androidx.compose.animation.AnimatedVisibility(
         visible = visible,
-        enter = slideInVertically(),
-        exit = slideOutVertically()
+        enter = slideInVertically(
+            initialOffsetY = {-it}
+        ),
+        exit = slideOutVertically(
+            targetOffsetY = {-it}
+        )
     ) {
         Row(
             modifier = Modifier

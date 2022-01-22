@@ -33,18 +33,14 @@ fun FileAndMediaPermission(
                 Dialog(
                     title = "Permission request",
                     text = "The File and Media is important for this app. Please grant the permission.",
+                    closeOnClick = false,
                     status = dialogStatus,
                     onCancel = {
                         doNotShowRationale.value = true
+                        dialogStatus.value = false
                     },
                     onConfirm = {
                         fileAndMediaPermissionState.launchPermissionRequest()
-
-                        if (
-                            fileAndMediaPermissionState.permissionRequested &&
-                            !fileAndMediaPermissionState.hasPermission
-                        )
-                            showFailedDialog.value = true
                     }
                 )
             }
