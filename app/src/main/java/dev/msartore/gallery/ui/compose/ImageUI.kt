@@ -138,11 +138,13 @@ fun Context.ImageUI(
                             text = DateUtils.formatElapsedTime(media.duration / 1000),
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.SansSerif
+                            fontFamily = FontFamily.SansSerif,
+                            color = Color.White
                         )
                         Icon(
                             modifier = Modifier.size(20.dp),
-                            id = R.drawable.baseline_play_circle_filled_24
+                            id = R.drawable.baseline_play_circle_filled_24,
+                            tint = Color.White
                         )
                     }
             }
