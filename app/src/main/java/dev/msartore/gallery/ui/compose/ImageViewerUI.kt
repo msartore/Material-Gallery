@@ -20,7 +20,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import coil.annotation.ExperimentalCoilApi
 import coil.compose.rememberImagePainter
-import dev.msartore.gallery.utils.MediaClass
+import dev.msartore.gallery.models.MediaClass
 import dev.msartore.gallery.utils.checkIfNewTransitionIsNearest
 import dev.msartore.gallery.utils.getImageSize
 

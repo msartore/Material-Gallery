@@ -2,6 +2,7 @@ package dev.msartore.gallery.ui.compose
 
 import android.content.Context
 import android.os.Build
+import android.os.VibrationEffect
 import android.text.format.DateUtils
 import android.util.Size
 import androidx.annotation.RequiresApi
@@ -32,9 +33,10 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.msartore.gallery.R
+import dev.msartore.gallery.models.MediaClass
 import dev.msartore.gallery.ui.compose.basic.CheckBox
 import dev.msartore.gallery.ui.compose.basic.Icon
-import dev.msartore.gallery.utils.MediaClass
+import dev.msartore.gallery.utils.vibrate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -71,8 +73,11 @@ fun Context.ImageUI(
                 .pointerInput(Unit) {
                     detectTapGestures(
                         onLongPress = {
-                            checkBoxVisible.value = true
+                            if (!checkBoxVisible.value)
+                                checkBoxVisible.value = true
+
                             media.selected.value = true
+                            vibrate()
                         },
                         onTap = {
 

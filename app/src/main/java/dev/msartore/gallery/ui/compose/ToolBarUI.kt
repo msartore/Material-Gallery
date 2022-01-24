@@ -28,6 +28,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.msartore.gallery.R
+import dev.msartore.gallery.models.DeleteMediaVars
+import dev.msartore.gallery.models.MediaClass
 import dev.msartore.gallery.ui.compose.basic.Icon
 import dev.msartore.gallery.utils.*
 import kotlinx.coroutines.flow.MutableSharedFlow

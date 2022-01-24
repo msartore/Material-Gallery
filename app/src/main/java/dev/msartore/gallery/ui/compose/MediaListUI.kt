@@ -14,7 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.unit.dp
-import dev.msartore.gallery.utils.MediaClass
+import dev.msartore.gallery.models.MediaClass
 
 @RequiresApi(Build.VERSION_CODES.Q)
 @OptIn(ExperimentalFoundationApi::class, ExperimentalAnimationApi::class)

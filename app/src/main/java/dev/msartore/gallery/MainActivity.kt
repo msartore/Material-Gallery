@@ -6,6 +6,7 @@ import android.database.ContentObserver
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.VibrationEffect
 import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -13,25 +14,29 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import coil.annotation.ExperimentalCoilApi
+import dev.msartore.gallery.models.DeleteMediaVars
+import dev.msartore.gallery.models.LoadingStatus
+import dev.msartore.gallery.models.MediaClass
 import dev.msartore.gallery.ui.compose.*
-import dev.msartore.gallery.ui.compose.basic.DialogLoading
+import dev.msartore.gallery.ui.compose.basic.DialogContainer
 import dev.msartore.gallery.ui.theme.GalleryTheme
 import dev.msartore.gallery.utils.*
 import kotlinx.coroutines.Dispatchers
@@ -55,32 +60,35 @@ class MainActivity : ComponentActivity() {
     private val updateList = MutableSharedFlow<Unit>()
     private val checkBoxVisible = mutableStateOf(false)
     private val mediaList = SnapshotStateList<MediaClass>()
-    private val dialogLoading = mutableStateOf(false)
+    private val dialogLoadingStatus = LoadingStatus()
     private var intentSaveLocation =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { activityResult ->
             if (activityResult.resultCode == RESULT_OK) {
+                val selectedList = mediaList.filter { it.selected.value }.map { it.uri }
 
-                val context = this.applicationContext
+                dialogLoadingStatus.count = selectedList.size
 
                 cor {
-
-                    dialogLoading.value = true
+                    dialogLoadingStatus.status.value = true
 
                     withContext(Dispatchers.IO) {
-
                         activityResult.data?.data?.toString()?.let { path ->
-
                             documentGeneration(
-                                listImage = mediaList.filter { it.selected.value }.map { it.uri },
+                                listImage = selectedList,
                                 path = path,
-                                contentResolver = contentResolver
+                                contentResolver = contentResolver,
+                                loadingStatus = dialogLoadingStatus
                             )
                         }
 
                         unselectAll()
+                        vibrate(
+                            duration = 250,
+                            amplitude = VibrationEffect.CONTENTS_FILE_DESCRIPTOR
+                        )
                     }
 
-                    dialogLoading.value = false
+                    dialogLoadingStatus.status.value = false
                 }
             }
         }
@@ -292,7 +300,46 @@ class MainActivity : ComponentActivity() {
                                     }
                                 )
 
-                                DialogLoading(status = dialogLoading)
+                                if (dialogLoadingStatus.status.value)
+                                    DialogContainer {
+                                        Column(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(160.dp)
+                                                .background(
+                                                    color = MaterialTheme.colorScheme.onSecondary,
+                                                    shape = RoundedCornerShape(16.dp)
+                                                )
+                                                .padding(25.dp),
+                                            verticalArrangement = Arrangement.SpaceBetween,
+                                            horizontalAlignment = Alignment.Start
+                                        ) {
+                                            Text(
+                                                text = "Please wait...",
+                                                style = MaterialTheme.typography.headlineSmall
+                                            )
+
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .wrapContentHeight(),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.Center
+                                            ) {
+                                                CircularProgressIndicator(
+                                                    modifier = Modifier
+                                                        .size(45.dp),
+                                                    color = MaterialTheme.colorScheme.primary
+                                                )
+
+                                                Text(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    text = dialogLoadingStatus.text.value,
+                                                    textAlign = TextAlign.Center,
+                                                )
+                                            }
+                                        }
+                                    }
                             }
                         )
                     }
