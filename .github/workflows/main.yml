@@ -1,4 +1,4 @@
-name: build
+name: build apk
 
 on:
   push:
@@ -22,7 +22,7 @@ jobs:
     - name: Build with Gradle
       run: ./gradlew build
       
-    - name: Build Debug APK
+    - name: Build APK
       run: ./gradlew assembleGithub
           
     - name: Get Previous tag
