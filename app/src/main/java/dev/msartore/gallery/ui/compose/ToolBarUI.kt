@@ -40,6 +40,7 @@ fun Activity.ToolBarUI(
     selectedMedia: MutableState<MediaClass?>,
     checkBoxVisible: MutableState<Boolean>,
     backgroundColor: Color,
+    onPDFClick: () -> Unit,
 ) {
 
     val intentCamera =
@@ -81,7 +82,7 @@ fun Activity.ToolBarUI(
                 }
 
                 Icon(
-                    painter = painterResource(id = R.drawable.baseline_share_24),
+                    id = R.drawable.baseline_share_24,
                     tint = Color.White
                 ) {
                     selectedMedia.value?.uri?.let {
@@ -142,6 +143,13 @@ fun Activity.ToolBarUI(
                         }
                         checkBoxVisible.value = false
                     }
+
+                    if (!mediaList.any { it.selected.value && it.duration != null })
+                        Icon(
+                            id = R.drawable.baseline_picture_as_pdf_24
+                        ) {
+                            onPDFClick()
+                        }
 
                     Icon(
                         painter = painterResource(id = R.drawable.baseline_share_24)

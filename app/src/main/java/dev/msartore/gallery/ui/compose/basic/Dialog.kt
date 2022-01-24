@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -94,16 +95,48 @@ fun Dialog(
 
 @Composable
 fun DialogContainer(
-    status: MutableState<Boolean> = mutableStateOf(false),
+    dialogProperties: DialogProperties = DialogProperties(
+        dismissOnBackPress = false,
+        dismissOnClickOutside = false
+    ),
     content: @Composable () -> Unit
 ) {
 
-    if (status.value)
-        androidx.compose.ui.window.Dialog(
-            onDismissRequest = { status.value = false },
-        ) {
-
-            
-        }
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = {},
+        properties = dialogProperties,
+    ) {
+        content()
+    }
 }
 
+@Composable
+fun DialogLoading(
+    status: MutableState<Boolean>,
+    dialogProperties: DialogProperties = DialogProperties(
+        dismissOnBackPress = false,
+        dismissOnClickOutside = false
+    )
+) {
+
+    if (status.value)
+        DialogContainer(
+            dialogProperties = dialogProperties,
+        ) {
+            Column(
+                modifier = Modifier
+                    .wrapContentSize()
+                    .background(
+                        color = MaterialTheme.colorScheme.onSecondary,
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(64.dp),
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+}

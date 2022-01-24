@@ -10,8 +10,6 @@ import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
-import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -33,12 +31,16 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import coil.annotation.ExperimentalCoilApi
 import dev.msartore.gallery.ui.compose.*
+import dev.msartore.gallery.ui.compose.basic.DialogLoading
 import dev.msartore.gallery.ui.theme.GalleryTheme
 import dev.msartore.gallery.utils.*
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
 
 @SuppressLint("NewApi")
 @OptIn(ExperimentalCoilApi::class, ExperimentalAnimationApi::class, ExperimentalFoundationApi::class)
@@ -53,7 +55,36 @@ class MainActivity : ComponentActivity() {
     private val updateList = MutableSharedFlow<Unit>()
     private val checkBoxVisible = mutableStateOf(false)
     private val mediaList = SnapshotStateList<MediaClass>()
-    private var intentSenderLauncher: ActivityResultLauncher<IntentSenderRequest> =
+    private val dialogLoading = mutableStateOf(false)
+    private var intentSaveLocation =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { activityResult ->
+            if (activityResult.resultCode == RESULT_OK) {
+
+                val context = this.applicationContext
+
+                cor {
+
+                    dialogLoading.value = true
+
+                    withContext(Dispatchers.IO) {
+
+                        activityResult.data?.data?.toString()?.let { path ->
+
+                            documentGeneration(
+                                listImage = mediaList.filter { it.selected.value }.map { it.uri },
+                                path = path,
+                                contentResolver = contentResolver
+                            )
+                        }
+
+                        unselectAll()
+                    }
+
+                    dialogLoading.value = false
+                }
+            }
+        }
+    private var intentSenderLauncher =
         registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { activityResult ->
             if (activityResult.resultCode == RESULT_OK) {
 
@@ -78,11 +109,7 @@ class MainActivity : ComponentActivity() {
 
             if (imageDeleteCounter == 0) {
 
-                mediaList.forEach {
-                    it.selected.value = false
-                }
-                
-                checkBoxVisible.value = false
+                unselectAll()
                 deleteInProgress = false
 
                 if (updateNeeded) {
@@ -253,14 +280,32 @@ class MainActivity : ComponentActivity() {
                                             MaterialTheme.colorScheme.surface
                                         }
                                     }
-                                    else Color.Transparent
+                                    else Color.Transparent,
+                                    onPDFClick = {
+
+                                        val intentCreateDocument = Intent(Intent.ACTION_CREATE_DOCUMENT)
+                                        intentCreateDocument.addCategory(Intent.CATEGORY_OPENABLE)
+                                        intentCreateDocument.type = "application/pdf"
+                                        intentCreateDocument.putExtra(Intent.EXTRA_TITLE, "Material Gallery ${getDate()}.pdf")
+
+                                        intentSaveLocation.launch(intentCreateDocument)
+                                    }
                                 )
+
+                                DialogLoading(status = dialogLoading)
                             }
                         )
                     }
                 }
             }
         }
+    }
+
+    private fun unselectAll() {
+        mediaList.forEach {
+            it.selected.value = false
+        }
+        checkBoxVisible.value = false
     }
 
     private suspend fun setVarsAndDeleteImage(
