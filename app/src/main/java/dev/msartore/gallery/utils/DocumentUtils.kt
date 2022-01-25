@@ -29,7 +29,7 @@ fun documentGeneration(
             val out = ByteArrayOutputStream()
             val original = BitmapFactory.decodeFile(image.absolutePath)
 
-            original.compress(Bitmap.CompressFormat.PNG, 100, out)
+            original.compress(Bitmap.CompressFormat.JPEG, 100, out)
 
             val decoded = BitmapFactory.decodeStream(ByteArrayInputStream(out.toByteArray()))
             val pageInfo = PdfDocument.PageInfo.Builder(decoded.width, decoded.height, index + 1).create()

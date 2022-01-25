@@ -2,7 +2,6 @@ package dev.msartore.gallery.ui.compose
 
 import android.content.Context
 import android.os.Build
-import android.os.VibrationEffect
 import android.text.format.DateUtils
 import android.util.Size
 import androidx.annotation.RequiresApi
@@ -155,11 +154,13 @@ fun Context.ImageUI(
             }
 
             AnimatedVisibility(
-                visible = media.selected.value,
+                visible = checkBoxVisible.value,
                 enter = scaleIn(),
                 exit = scaleOut(),
             ) {
-                 CheckBox()
+                 CheckBox(
+                     checked = media.selected
+                 )
             }
         }
     }
