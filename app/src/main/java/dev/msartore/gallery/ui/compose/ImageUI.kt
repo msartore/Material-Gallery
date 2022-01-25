@@ -32,17 +32,23 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.msartore.gallery.R
+import dev.msartore.gallery.models.Media
 import dev.msartore.gallery.models.MediaClass
 import dev.msartore.gallery.ui.compose.basic.CheckBox
 import dev.msartore.gallery.ui.compose.basic.Icon
+import dev.msartore.gallery.utils.loadImage
 import dev.msartore.gallery.utils.vibrate
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.withContext
+import java.util.concurrent.ConcurrentLinkedQueue
 
 @OptIn(ExperimentalAnimationApi::class)
 @RequiresApi(Build.VERSION_CODES.Q)
 @Composable
 fun Context.ImageUI(
+    concurrentLinkedQueue: ConcurrentLinkedQueue<Media>,
+    updateCLDCache: MutableSharedFlow<Media>,
     media: MediaClass,
     mediaList: SnapshotStateList<MediaClass>,
     checkBoxVisible: MutableState<Boolean>,
@@ -52,15 +58,38 @@ fun Context.ImageUI(
     val errorState = remember { mutableStateOf(false) }
 
     LaunchedEffect(key1 = thumbnail.value == null) {
+
         runCatching {
             withContext(Dispatchers.IO) {
-                thumbnail.value = applicationContext.contentResolver.loadThumbnail(
-                    media.uri, Size(10, 10), null).asImageBitmap()
 
-                thumbnail.value = applicationContext.contentResolver.loadThumbnail(
-                    media.uri, Size(200, 200), null).asImageBitmap()
+                val mediaTmp = concurrentLinkedQueue.find {
+                    it.index == media.index
+                }
+
+                if (mediaTmp == null) {
+                    if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
+                        thumbnail.value = applicationContext.contentResolver.loadThumbnail(
+                            media.uri, Size(10, 10), null
+                        ).asImageBitmap()
+
+                        thumbnail.value = applicationContext.contentResolver.loadThumbnail(
+                            media.uri, Size(200, 200), null
+                        ).asImageBitmap()
+                    }
+                    else {
+                        thumbnail.value = contentResolver.loadImage(media, 100)
+
+                        thumbnail.value = contentResolver.loadImage(media, 10)
+                    }
+
+                    updateCLDCache.emit(Media(thumbnail.value, media.index))
+                }
+                else {
+                    thumbnail.value = mediaTmp.imageBitmap
+                }
             }
         }.getOrElse {
+            it.printStackTrace()
             errorState.value = true
         }
     }
@@ -128,7 +157,7 @@ fun Context.ImageUI(
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                 )
-                
+
                 if (media.duration != null)
                     Row(
                         Modifier
@@ -175,8 +204,8 @@ fun Context.ImageUI(
         else
             Spacer(
                 modifier = Modifier
-                    .width(200.dp)
-                    .height(200.dp)
+                    .width(100.dp)
+                    .height(100.dp)
             )
     }
 

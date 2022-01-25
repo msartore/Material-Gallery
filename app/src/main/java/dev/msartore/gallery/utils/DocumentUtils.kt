@@ -6,6 +6,7 @@ import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.pdf.PdfDocument
 import android.net.Uri
+import android.util.Log
 import dev.msartore.gallery.models.LoadingStatus
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -18,8 +19,11 @@ fun documentGeneration(
     contentResolver: ContentResolver,
     loadingStatus: LoadingStatus
 ) {
-    val document = PdfDocument()
     var counter = 0
+    val document = PdfDocument()
+    val options = BitmapFactory.Options().apply {
+        inPreferredConfig = Bitmap.Config.RGB_565
+    }
 
     listImage.forEachIndexed { index, uri ->
         contentResolver.getPath(uri)?.let {
@@ -27,7 +31,7 @@ fun documentGeneration(
 
             val image = File(it)
             val out = ByteArrayOutputStream()
-            val original = BitmapFactory.decodeFile(image.absolutePath)
+            val original = BitmapFactory.decodeFile(image.absolutePath, options)
 
             original.compress(Bitmap.CompressFormat.JPEG, 100, out)
 

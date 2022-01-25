@@ -31,9 +31,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
-import coil.annotation.ExperimentalCoilApi
 import dev.msartore.gallery.models.DeleteMediaVars
 import dev.msartore.gallery.models.LoadingStatus
+import dev.msartore.gallery.models.Media
 import dev.msartore.gallery.models.MediaClass
 import dev.msartore.gallery.ui.compose.*
 import dev.msartore.gallery.ui.compose.basic.DialogContainer
@@ -45,10 +45,11 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.concurrent.ConcurrentLinkedQueue
 
 
 @SuppressLint("NewApi")
-@OptIn(ExperimentalCoilApi::class, ExperimentalAnimationApi::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalAnimationApi::class, ExperimentalFoundationApi::class)
 class MainActivity : ComponentActivity() {
 
     private var imageDeleteCounter = 0
@@ -61,6 +62,8 @@ class MainActivity : ComponentActivity() {
     private val checkBoxVisible = mutableStateOf(false)
     private val mediaList = SnapshotStateList<MediaClass>()
     private val dialogLoadingStatus = LoadingStatus()
+    private val updateCLDCache = MutableSharedFlow<Media>()
+    private val concurrentLinkedQueueCache = ConcurrentLinkedQueue<Media>()
     private var intentSaveLocation =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { activityResult ->
             if (activityResult.resultCode == RESULT_OK) {
@@ -96,7 +99,7 @@ class MainActivity : ComponentActivity() {
         registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { activityResult ->
             if (activityResult.resultCode == RESULT_OK) {
 
-                if(Build.VERSION.SDK_INT == Build.VERSION_CODES.Q) {
+                if(Build.VERSION.SDK_INT in 28..29) {
                     lifecycleScope.launch {
                         setVarsAndDeleteImage(deletedImageUri ?: return@launch)
                     }
@@ -135,6 +138,7 @@ class MainActivity : ComponentActivity() {
         
         val mediaDeleteFlow = MutableSharedFlow<DeleteMediaVars>()
         val selectedMedia = mutableStateOf<MediaClass?>(null)
+        var counterMedia = 0
         val loading = mutableStateOf(false)
         val getContent = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
             if (it.resultCode != RESULT_OK) {
@@ -144,6 +148,20 @@ class MainActivity : ComponentActivity() {
         val toolbarVisible = mutableStateOf(true)
         this.initContentResolver(contentResolver) {
             cor { updateList.emit(Unit) }
+        }
+
+        cor {
+            updateCLDCache.collect { media ->
+
+                if (concurrentLinkedQueueCache.any { it.index == media.index })
+                    return@collect
+
+                if (concurrentLinkedQueueCache.size > 300) {
+                    concurrentLinkedQueueCache.poll()
+                }
+
+                concurrentLinkedQueueCache.add(media)
+            }
         }
 
         cor {
@@ -169,8 +187,9 @@ class MainActivity : ComponentActivity() {
                         loading.value = true
 
                         mediaList.clear()
-                        mediaList.addAll(contentResolver.queryImageMediaStore())
-                        mediaList.addAll(contentResolver.queryVideoMediaStore())
+                        concurrentLinkedQueueCache.clear()
+                        mediaList.addAll(contentResolver.queryImageMediaStore { counterMedia = it })
+                        mediaList.addAll(contentResolver.queryVideoMediaStore(counter = counterMedia) { counterMedia = it })
                         mediaList.sortByDescending { it.date }
 
                         delay(10)
@@ -215,6 +234,8 @@ class MainActivity : ComponentActivity() {
                                 ) {
                                     if (!loading.value)
                                         MediaListUI(
+                                            concurrentLinkedQueue = concurrentLinkedQueueCache,
+                                            updateCLDCache = updateCLDCache,
                                             lazyListState = scrollState,
                                             mediaList = mediaList,
                                             checkBoxVisible = checkBoxVisible,

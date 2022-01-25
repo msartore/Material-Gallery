@@ -14,12 +14,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.unit.dp
+import dev.msartore.gallery.models.Media
 import dev.msartore.gallery.models.MediaClass
+import kotlinx.coroutines.flow.MutableSharedFlow
+import java.util.concurrent.ConcurrentLinkedQueue
 
 @RequiresApi(Build.VERSION_CODES.Q)
 @OptIn(ExperimentalFoundationApi::class, ExperimentalAnimationApi::class)
 @Composable
 fun Context.MediaListUI(
+    concurrentLinkedQueue: ConcurrentLinkedQueue<Media>,
+    updateCLDCache: MutableSharedFlow<Media>,
     checkBoxVisible: MutableState<Boolean>,
     lazyListState: LazyListState,
     mediaList: SnapshotStateList<MediaClass>,
@@ -34,6 +39,8 @@ fun Context.MediaListUI(
         content = {
             items(mediaList.size){ index ->
                 ImageUI(
+                    concurrentLinkedQueue = concurrentLinkedQueue,
+                    updateCLDCache = updateCLDCache,
                     media = mediaList[index],
                     checkBoxVisible = checkBoxVisible,
                     mediaList = mediaList,

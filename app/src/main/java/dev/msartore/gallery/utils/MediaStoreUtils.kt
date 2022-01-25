@@ -9,6 +9,7 @@ import android.content.Intent
 import android.database.ContentObserver
 import android.database.Cursor
 import android.graphics.BitmapFactory
+import android.media.ThumbnailUtils
 import android.net.Uri
 import android.os.Build
 import android.os.Handler
@@ -18,15 +19,15 @@ import android.provider.MediaStore.MediaColumns
 import android.util.Size
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.IntentSenderRequest
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import dev.msartore.gallery.models.DatabaseInfo
 import dev.msartore.gallery.models.MediaClass
 import dev.msartore.gallery.models.MediaInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-fun ContentResolver.queryImageMediaStore(): List<MediaClass> {
+fun ContentResolver.queryImageMediaStore(counterUpdater: (Int) -> Unit): List<MediaClass> {
 
     val imageList = mutableListOf<MediaClass>()
 
@@ -63,6 +64,7 @@ fun ContentResolver.queryImageMediaStore(): List<MediaClass> {
             cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DISPLAY_NAME)
         val sizeColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.SIZE)
         val dateColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATE_TAKEN)
+        var counterLocal = 0
 
         while (cursor.moveToNext()) {
 
@@ -76,14 +78,21 @@ fun ContentResolver.queryImageMediaStore(): List<MediaClass> {
                 id
             )
 
-            imageList.add(MediaClass(contentUri, name, size, date))
+            imageList.add(MediaClass(contentUri, counterLocal, name, size, date))
+
+            counterLocal++
         }
+
+        counterUpdater(counterLocal)
     }
 
     return imageList
 }
 
-fun ContentResolver.queryVideoMediaStore(): List<MediaClass> {
+fun ContentResolver.queryVideoMediaStore(
+    counter: Int,
+    counterUpdater: (Int) -> Unit
+): List<MediaClass> {
 
     val videoList = mutableListOf<MediaClass>()
 
@@ -114,8 +123,10 @@ fun ContentResolver.queryVideoMediaStore(): List<MediaClass> {
         sortOrder
     )
 
+
     query?.use { cursor ->
 
+        var counterLocal = counter
         val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Video.Media._ID)
         val nameColumn =
             cursor.getColumnIndexOrThrow(MediaStore.Video.Media.DISPLAY_NAME)
@@ -136,8 +147,12 @@ fun ContentResolver.queryVideoMediaStore(): List<MediaClass> {
                 id
             )
 
-            videoList.add(MediaClass(contentUri, name, size, date, duration))
+            videoList.add(MediaClass(contentUri, counterLocal, name, size, date, duration))
+
+            counterLocal++
         }
+
+        counterUpdater(counterLocal)
     }
 
     return videoList
@@ -205,7 +220,7 @@ suspend fun ContentResolver.deletePhotoFromExternalStorage(
                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.R -> {
                     MediaStore.createDeleteRequest(this@deletePhotoFromExternalStorage, listOf(photoUri)).intentSender
                 }
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q -> {
+                Build.VERSION.SDK_INT in 28..29 -> {
                     val recoverableSecurityException = e as? RecoverableSecurityException
                     recoverableSecurityException?.userAction?.actionIntent?.intentSender
                 }
@@ -258,4 +273,23 @@ fun Activity.shareImage(imageUriArray: ArrayList<Uri>) {
     intent.putExtra(Intent.EXTRA_STREAM, imageUriArray)
 
     startActivity(Intent.createChooser(intent, "Share Via"))
+}
+
+
+@Suppress("DEPRECATION")
+fun ContentResolver.loadImage(media: MediaClass, size: Int): ImageBitmap? {
+
+    var imageBitmap: ImageBitmap? = null
+
+    getPath(media.uri)?.let { path ->
+        imageBitmap =
+            if (media.duration != null)
+                ThumbnailUtils.createVideoThumbnail(path, MediaStore.Video.Thumbnails.MICRO_KIND)?.asImageBitmap()
+            else
+                BitmapFactory.decodeFile(path, BitmapFactory.Options().apply {
+                    inSampleSize = size
+                }).asImageBitmap()
+    }
+
+    return imageBitmap
 }

@@ -3,9 +3,11 @@ package dev.msartore.gallery.models
 import android.net.Uri
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.graphics.ImageBitmap
 
 open class MediaClass(
     val uri: Uri,
+    val index: Int,
     val name: String,
     val size: Int,
     val date: Long,
@@ -26,4 +28,9 @@ data class MediaInfo(
 data class DeleteMediaVars(
     val listUri: List<Uri>,
     val action: (() -> Unit)? = null
+)
+
+data class Media(
+    var imageBitmap: ImageBitmap? = null,
+    var index: Int = -1
 )
