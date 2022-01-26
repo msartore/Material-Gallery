@@ -1,5 +1,7 @@
 package dev.msartore.gallery.ui.compose
 
+import android.Manifest
+import android.os.Build
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -9,54 +11,60 @@ import com.google.accompanist.permissions.PermissionRequired
 import com.google.accompanist.permissions.rememberPermissionState
 import dev.msartore.gallery.ui.compose.basic.Dialog
 
+
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun FileAndMediaPermission(
+    permission: String,
     navigateToSettingsScreen: () -> Unit,
     onPermissionGranted: @Composable () -> Unit,
     onPermissionDenied: () -> Unit
 ) {
     // Track if the user doesn't want to see the rationale any more.
     val doNotShowRationale = rememberSaveable { mutableStateOf(false) }
-    val fileAndMediaPermissionState = rememberPermissionState(android.Manifest.permission.READ_EXTERNAL_STORAGE)
+    val fileAndMediaPermissionState = rememberPermissionState(permission)
     val showFailedDialog = remember { mutableStateOf(false) }
 
-    PermissionRequired(
-        permissionState = fileAndMediaPermissionState,
-        permissionNotGrantedContent = {
-            if (doNotShowRationale.value) {
-                onPermissionDenied.invoke()
-            } else {
+    if (permission == Manifest.permission.WRITE_EXTERNAL_STORAGE && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+        onPermissionGranted()
+    else {
+        PermissionRequired(
+            permissionState = fileAndMediaPermissionState,
+            permissionNotGrantedContent = {
+                if (doNotShowRationale.value) {
+                    onPermissionDenied.invoke()
+                } else {
 
-                val dialogStatus = remember { mutableStateOf(true) }
+                    val dialogStatus = remember { mutableStateOf(true) }
 
-                Dialog(
-                    title = "Permission request",
-                    text = "The File and Media is important for this app. Please grant the permission.",
-                    closeOnClick = false,
-                    status = dialogStatus,
-                    onCancel = {
-                        doNotShowRationale.value = true
-                        dialogStatus.value = false
-                    },
-                    onConfirm = {
-                        fileAndMediaPermissionState.launchPermissionRequest()
-                    }
-                )
+                    Dialog(
+                        title = "Permission request",
+                        text = "The File and Media is important for this app. Please grant the permission.",
+                        closeOnClick = false,
+                        status = dialogStatus,
+                        onCancel = {
+                            doNotShowRationale.value = true
+                            dialogStatus.value = false
+                        },
+                        onConfirm = {
+                            fileAndMediaPermissionState.launchPermissionRequest()
+                        }
+                    )
+                }
+            },
+            permissionNotAvailableContent = {
+                showFailedDialog.value = true
             }
-        },
-        permissionNotAvailableContent = {
-            showFailedDialog.value = true
+        ) {
+            onPermissionGranted.invoke()
         }
-    ) {
-        onPermissionGranted.invoke()
-    }
 
-    if (showFailedDialog.value)
-        DialogPermissionRejected(
-            navigateToSettingsScreen =  navigateToSettingsScreen,
-            onCancel = onPermissionDenied
-        )
+        if (showFailedDialog.value)
+            DialogPermissionRejected(
+                navigateToSettingsScreen =  navigateToSettingsScreen,
+                onCancel = onPermissionDenied
+            )
+    }
 }
 
 @Composable

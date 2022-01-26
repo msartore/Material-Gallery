@@ -123,7 +123,6 @@ fun ContentResolver.queryVideoMediaStore(
         sortOrder
     )
 
-
     query?.use { cursor ->
 
         var counterLocal = counter
@@ -169,25 +168,41 @@ fun ContentResolver.getImageSize(image: Uri): Size {
 fun Context.initContentResolver(
     contentResolver: ContentResolver,
     action: () -> Unit
-): ContentObserver {
+): Pair<ContentObserver, ContentObserver> {
 
     val context = this
-    var databaseInfo = DatabaseInfo()
-    val observer = object : ContentObserver(Handler(Looper.getMainLooper())) {
+    val databaseInfo = DatabaseInfo()
+    val observerImage = object : ContentObserver(Handler(Looper.getMainLooper())) {
         override fun onChange(selfChange: Boolean) {
 
             super.onChange(selfChange)
 
-            val lastDatabaseInfo = readLastDateFromMediaStore(context)
+            val lastDatabaseInfo = readLastDateFromMediaStore(context, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
 
             if (
-                lastDatabaseInfo.videoDBInfo.dateMedia > databaseInfo.videoDBInfo.dateMedia ||
-                lastDatabaseInfo.videoDBInfo.countMedia != databaseInfo.videoDBInfo.countMedia ||
-                lastDatabaseInfo.imageDBInfo.dateMedia > databaseInfo.imageDBInfo.dateMedia ||
-                lastDatabaseInfo.imageDBInfo.countMedia != databaseInfo.imageDBInfo.countMedia
+                lastDatabaseInfo.dateMedia > databaseInfo.imageDBInfo.dateMedia ||
+                lastDatabaseInfo.countMedia != databaseInfo.imageDBInfo.countMedia
             ) {
 
-                databaseInfo = lastDatabaseInfo
+                databaseInfo.imageDBInfo = lastDatabaseInfo
+
+                action()
+            }
+        }
+    }
+    val observerVideo = object : ContentObserver(Handler(Looper.getMainLooper())) {
+        override fun onChange(selfChange: Boolean) {
+
+            super.onChange(selfChange)
+
+            val lastDatabaseInfo = readLastDateFromMediaStore(context, MediaStore.Video.Media.EXTERNAL_CONTENT_URI)
+
+            if (
+                lastDatabaseInfo.dateMedia > databaseInfo.videoDBInfo.dateMedia ||
+                lastDatabaseInfo.countMedia != databaseInfo.videoDBInfo.countMedia
+            ) {
+
+                databaseInfo.videoDBInfo = lastDatabaseInfo
 
                 action()
             }
@@ -196,59 +211,65 @@ fun Context.initContentResolver(
 
     contentResolver.registerContentObserver(
         MediaStore.Images.Media.EXTERNAL_CONTENT_URI, true,
-        observer
+        observerImage
     )
 
-    return observer
+    contentResolver.registerContentObserver(
+        MediaStore.Video.Media.EXTERNAL_CONTENT_URI, true,
+        observerVideo
+    )
+
+    return Pair(observerVideo, observerImage)
 }
 
-fun Context.unregisterContentResolver(contentObserver: ContentObserver) {
-
+fun Context.unregisterContentResolver(contentObserver: ContentObserver) =
     contentResolver.unregisterContentObserver(contentObserver)
-}
 
+@Suppress("DEPRECATION")
 suspend fun ContentResolver.deletePhotoFromExternalStorage(
     photoUri: Uri,
-    intentSenderLauncher: ActivityResultLauncher<IntentSenderRequest>
+    intentSenderLauncher: ActivityResultLauncher<IntentSenderRequest>,
+    actionUpdateList: () -> Unit
 ) {
-
     withContext(Dispatchers.IO) {
-        try {
-            delete(photoUri, null, null)
-        } catch (e: SecurityException) {
-            val intentSender = when {
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.R -> {
-                    MediaStore.createDeleteRequest(this@deletePhotoFromExternalStorage, listOf(photoUri)).intentSender
-                }
-                Build.VERSION.SDK_INT in 28..29 -> {
-                    val recoverableSecurityException = e as? RecoverableSecurityException
-                    recoverableSecurityException?.userAction?.actionIntent?.intentSender
-                }
-                else -> null
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q){
+
+            getPath(photoUri)?.let { path ->
+                val where = MediaColumns.DATA + "=?"
+                val selectionArgs = arrayOf(path)
+                val filesUri = MediaStore.Files.getContentUri("external")
+
+                if (delete(filesUri, where, selectionArgs) > 0)
+                    actionUpdateList()
             }
-            intentSender?.let { sender ->
-                intentSenderLauncher.launch(
-                    IntentSenderRequest.Builder(sender).build()
-                )
+        }
+        else {
+            try {
+                delete(photoUri, null, null)
+            } catch (e: SecurityException) {
+                val intentSender = when {
+                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.R -> {
+                        MediaStore.createDeleteRequest(this@deletePhotoFromExternalStorage, listOf(photoUri)).intentSender
+                    }
+                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q -> {
+                        val recoverableSecurityException = e as? RecoverableSecurityException
+                        recoverableSecurityException?.userAction?.actionIntent?.intentSender
+                    }
+                    else -> null
+                }
+                intentSender?.let { sender ->
+                    intentSenderLauncher.launch(
+                        IntentSenderRequest.Builder(sender).build()
+                    )
+                }
             }
         }
     }
 }
 
-private fun readLastDateFromMediaStore(context: Context): DatabaseInfo {
-
-    val cursorImage =
-        context.contentResolver.query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, null, null, null, "date_added DESC")!!
-    val cursorVideo =
-        context.contentResolver.query(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, null, null, null, "date_added DESC")!!
-
-    val result = DatabaseInfo()
-
-    result.imageDBInfo = checkMediaDate(cursorImage)
-    result.videoDBInfo = checkMediaDate(cursorVideo)
-
-    return result
-}
+private fun readLastDateFromMediaStore(context: Context, uri: Uri) =
+    checkMediaDate(context.contentResolver.query(uri, null, null, null, "date_added DESC")!!)
 
 private fun checkMediaDate(cursor: Cursor): MediaInfo {
 
@@ -275,7 +296,6 @@ fun Activity.shareImage(imageUriArray: ArrayList<Uri>) {
     startActivity(Intent.createChooser(intent, "Share Via"))
 }
 
-
 @Suppress("DEPRECATION")
 fun ContentResolver.loadImage(media: MediaClass, size: Int): ImageBitmap? {
 
@@ -288,6 +308,8 @@ fun ContentResolver.loadImage(media: MediaClass, size: Int): ImageBitmap? {
             else
                 BitmapFactory.decodeFile(path, BitmapFactory.Options().apply {
                     inSampleSize = size
+                    outHeight = 100
+                    outWidth = 100
                 }).asImageBitmap()
     }
 

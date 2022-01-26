@@ -6,7 +6,6 @@ import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.pdf.PdfDocument
 import android.net.Uri
-import android.util.Log
 import dev.msartore.gallery.models.LoadingStatus
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
