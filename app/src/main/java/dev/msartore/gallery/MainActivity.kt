@@ -27,6 +27,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -140,7 +141,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         
         val mediaDeleteFlow = MutableSharedFlow<DeleteMediaVars>()
-        val selectedMedia = mutableStateOf<MediaClass?>(null)
         var counterMedia = 0
         val loading = mutableStateOf(true)
         val getContent = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
@@ -152,7 +152,6 @@ class MainActivity : ComponentActivity() {
             Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
             Uri.fromParts("package", packageName, null)
         )
-        val toolbarVisible = mutableStateOf(true)
 
         contentObserver = this.initContentResolver(contentResolver) {
             cor { updateList.emit(Unit) }
@@ -209,6 +208,10 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
+
+            val selectedMedia = remember { mutableStateOf<MediaClass?>(null) }
+            val toolbarVisible = remember { mutableStateOf(true) }
+
             GalleryTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
