@@ -139,7 +139,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
 
         super.onCreate(savedInstanceState)
-        
+
         val mediaDeleteFlow = MutableSharedFlow<DeleteMediaVars>()
         var counterMedia = 0
         val loading = mutableStateOf(true)
