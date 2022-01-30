@@ -8,6 +8,8 @@ import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.Timeline
 import com.google.android.exoplayer2.source.TrackGroupArray
 import com.google.android.exoplayer2.trackselection.TrackSelectionArray
+import java.util.*
+import kotlin.concurrent.fixedRateTimer
 
 
 data class LoadingStatus(
@@ -15,6 +17,28 @@ data class LoadingStatus(
     val text: MutableState<String> = mutableStateOf("0%"),
     val status: MutableState<Boolean> = mutableStateOf(false)
 )
+
+class CustomTimer(
+    var period: Long,
+    var action: () -> Unit
+) {
+
+    private var timer: Timer? = null
+    private var isOperating = false
+
+    fun stop() {
+        timer?.cancel()
+        timer?.purge()
+        isOperating = false
+    }
+
+    fun start() {
+        if (!isOperating)
+            timer = fixedRateTimer(period = period) {
+                action()
+            }
+    }
+}
 
 class PlayerEventListener(
     val onTimeLineChanged: (timeline: Timeline?, manifest: Any?) -> Unit = { _, _ -> },

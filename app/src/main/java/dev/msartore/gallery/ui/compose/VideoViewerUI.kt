@@ -32,9 +32,9 @@ import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.MediaItem
 import com.google.android.exoplayer2.ui.PlayerView
 import dev.msartore.gallery.R
+import dev.msartore.gallery.models.CustomTimer
 import dev.msartore.gallery.models.PlayerEventListener
 import dev.msartore.gallery.ui.compose.basic.Icon
-import dev.msartore.gallery.utils.CustomTimer
 import dev.msartore.gallery.utils.changeBarsStatus
 import dev.msartore.gallery.utils.cor
 import dev.msartore.gallery.utils.transformMillsToFormattedTime
@@ -53,7 +53,7 @@ fun VideoViewerUI(
     val exoPlayer = remember { getExoPlayer(context, uri) }
     val visibility = remember { mutableStateOf(true) }
 
-    val isPlaying = remember { mutableStateOf(false) }
+    val videoStatus = remember { mutableStateOf(VideoStatus.STOPPED) }
     val currentPositionFormatted = remember { mutableStateOf("00:00") }
     val currentPosition = remember { mutableStateOf(0f) }
     val duration = remember { mutableStateOf("00:00") }
@@ -74,7 +74,7 @@ fun VideoViewerUI(
         ) {
             cor {
                 withContext(Dispatchers.Main) {
-                    if (isPlaying.value) {
+                    if (videoStatus.value == VideoStatus.PLAYING) {
                         currentPosition.value = exoPlayer.currentPosition / 1000f
 
                         currentPositionFormatted.value = transformMillsToFormattedTime(exoPlayer.currentPosition)
@@ -90,15 +90,15 @@ fun VideoViewerUI(
 
                 when (state) {
                     4 -> {
-                        isPlaying.value = false
+                        videoStatus.value = VideoStatus.STOPPED
                         timer.stop()
                     }
                     3 -> {
-                        isPlaying.value = playerWhenReady
+                        videoStatus.value = if (playerWhenReady) VideoStatus.PLAYING else VideoStatus.PAUSED
                     }
                     else -> {
                         if (playerWhenReady) {
-                            isPlaying.value = true
+                            videoStatus.value = VideoStatus.PLAYING
                             timer.start()
                         }
                     }
@@ -114,17 +114,16 @@ fun VideoViewerUI(
             onResume = {
                 exoPlayer.playWhenReady = true
                 timer.start()
-                exoPlayer.addListener(listener)
             },
             onStop = {
                 exoPlayer.playWhenReady = false
-                exoPlayer.removeListener(listener)
             },
             onDestroy = {
                 timer.stop()
                 exoPlayer.release()
             }
         )
+        exoPlayer.addListener(listener)
         lifecycle.addObserver(lifecycleObserver)
         onDispose {
             lifecycle.removeObserver(lifecycleObserver)
@@ -202,19 +201,32 @@ fun VideoViewerUI(
                         id = R.drawable.round_fast_rewind_24,
                         tint = Color.White
                     ) {
-                        exoPlayer.seekTo(exoPlayer.currentPosition - 10000)
+                        exoPlayer.seekBack()
                     }
                     Icon(
-                        id = if (isPlaying.value) R.drawable.round_pause_24 else R.drawable.round_play_arrow_24,
+                        id = if (videoStatus.value == VideoStatus.PLAYING) R.drawable.round_pause_24 else R.drawable.round_play_arrow_24,
                         tint = Color.White
                     ) {
-                        exoPlayer.playWhenReady = !exoPlayer.playWhenReady
+                        when (videoStatus.value) {
+                            VideoStatus.PLAYING -> {
+                                exoPlayer.playWhenReady = false
+                                videoStatus.value = VideoStatus.PAUSED
+                            }
+                            VideoStatus.PAUSED -> {
+                                exoPlayer.playWhenReady = true
+                                videoStatus.value = VideoStatus.PLAYING
+                            }
+                            VideoStatus.STOPPED -> {
+                                exoPlayer.seekTo(0)
+                                videoStatus.value = VideoStatus.PLAYING
+                            }
+                        }
                     }
                     Icon(
                         id = R.drawable.round_fast_forward_24,
                         tint = Color.White
                     ) {
-                        exoPlayer.seekTo(exoPlayer.currentPosition + 10000)
+                        exoPlayer.seekForward()
                     }
                 }
 
@@ -226,7 +238,7 @@ fun VideoViewerUI(
                 CompositionLocalProvider(LocalRippleTheme provides sliderTheme) {
                     Slider(
                         value = if (currentPosition.value < 0) 0f else currentPosition.value,
-                        valueRange = 0f..if (exoPlayer.duration < 0) 0f else (exoPlayer.duration / 1000).toFloat(),
+                        valueRange = 0f..if (exoPlayer.duration < 0) 0f else exoPlayer.duration / 1000f,
                         onValueChange = {
                             currentPosition.value = it
                             exoPlayer.playWhenReady = false
@@ -286,4 +298,10 @@ private fun getLifecycleEventObserver(
 enum class VideoControllerVisibility(val value: Int) {
     GONE(0),
     VISIBLE(8),
+}
+
+enum class VideoStatus {
+    PLAYING,
+    PAUSED,
+    STOPPED,
 }
