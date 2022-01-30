@@ -1,7 +1,6 @@
 package dev.msartore.gallery.ui.compose.basic
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -10,7 +9,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
@@ -60,32 +58,24 @@ fun Dialog(
                     horizontalArrangement = Arrangement.End
                 ) {
 
-                    Text(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(16.dp))
-                            .clickable {
-                                onCancel.invoke()
-                                if (closeOnClick)
-                                    status.value = false
-                            }
-                            .padding(8.dp),
-                        text = cancelText,
-                        color = MaterialTheme.colorScheme.primary
+                    TextButton(
+                        onClick = {
+                            onCancel.invoke()
+                            if (closeOnClick)
+                                status.value = false
+                        },
+                        text = cancelText
                     )
 
                     Spacer(modifier = Modifier.width(8.dp))
 
-                    Text(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(16.dp))
-                            .clickable {
-                                onConfirm.invoke()
-                                if (closeOnClick)
-                                    status.value = false
-                            }
-                            .padding(8.dp),
-                        text = confirmText,
-                        color = MaterialTheme.colorScheme.primary
+                    TextButton(
+                        onClick = {
+                            onConfirm.invoke()
+                            if (closeOnClick)
+                                status.value = false
+                       },
+                        text = confirmText
                     )
                 }
             }
@@ -98,13 +88,15 @@ fun DialogContainer(
         dismissOnBackPress = false,
         dismissOnClickOutside = false
     ),
+    status: MutableState<Boolean>,
     content: @Composable () -> Unit
 ) {
 
-    androidx.compose.ui.window.Dialog(
-        onDismissRequest = {},
-        properties = dialogProperties,
-    ) {
-        content()
-    }
+    if (status.value)
+        androidx.compose.ui.window.Dialog(
+            properties = dialogProperties,
+            onDismissRequest = { status.value = false },
+        ) {
+            content()
+        }
 }

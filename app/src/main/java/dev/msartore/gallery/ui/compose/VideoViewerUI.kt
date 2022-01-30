@@ -130,7 +130,6 @@ fun VideoViewerUI(
         }
     }
 
-
     BackHandler(enabled = true){
         exoPlayer.release()
         timer.stop()
@@ -231,6 +230,7 @@ fun VideoViewerUI(
                 }
 
                 Text(
+                    modifier = Modifier.padding(start = 16.dp),
                     text = "${currentPositionFormatted.value} / ${duration.value}",
                     color = Color.White
                 )
@@ -257,7 +257,7 @@ fun VideoViewerUI(
                     )
                 }
             }
-            }
+        }
     }
 }
 

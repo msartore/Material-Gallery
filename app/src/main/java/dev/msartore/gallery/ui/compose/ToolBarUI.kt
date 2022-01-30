@@ -8,6 +8,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -20,6 +21,7 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
@@ -41,6 +43,7 @@ fun Activity.ToolBarUI(
     mediaDelete: MutableSharedFlow<DeleteMediaVars>,
     selectedMedia: MutableState<MediaClass?>,
     checkBoxVisible: MutableState<Boolean>,
+    creditsDialogStatus: MutableState<Boolean>,
     backgroundColor: Color,
     onPDFClick: () -> Unit,
 ) {
@@ -111,6 +114,12 @@ fun Activity.ToolBarUI(
             when {
                 !checkBoxVisible.value && selectedMedia.value == null -> {
                     Text(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(16.dp))
+                            .clickable {
+                                creditsDialogStatus.value = true
+                            }
+                            .padding(5.dp),
                         text = "Gallery",
                         fontSize = 20.sp,
                         textAlign = TextAlign.Center,

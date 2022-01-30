@@ -211,6 +211,7 @@ class MainActivity : ComponentActivity() {
 
             val selectedMedia = remember { mutableStateOf<MediaClass?>(null) }
             val toolbarVisible = remember { mutableStateOf(true) }
+            val creditsDialogStatus = remember { mutableStateOf(false) }
 
             GalleryTheme {
                 Surface(
@@ -307,6 +308,7 @@ class MainActivity : ComponentActivity() {
                                             mediaDelete = mediaDeleteFlow,
                                             selectedMedia = selectedMedia,
                                             checkBoxVisible = checkBoxVisible,
+                                            creditsDialogStatus = creditsDialogStatus,
                                             backgroundColor =
                                             if (selectedMedia.value == null) {
                                                 if (scrollState.firstVisibleItemScrollOffset == 0) {
@@ -375,8 +377,9 @@ class MainActivity : ComponentActivity() {
                                             }
                                         }
 
-                                        if (dialogLoadingStatus.status.value)
-                                            DialogContainer {
+                                            DialogContainer(
+                                                status = dialogLoadingStatus.status
+                                            ) {
                                                 Column(
                                                     modifier = Modifier
                                                         .fillMaxWidth()
@@ -415,6 +418,11 @@ class MainActivity : ComponentActivity() {
                                                     }
                                                 }
                                             }
+
+                                        CreditsDialogUI(
+                                            activity =  this@MainActivity,
+                                            status = creditsDialogStatus,
+                                        )
                                     }
                                 )
                             }
