@@ -293,8 +293,8 @@ class MainActivity : ComponentActivity() {
                                                     onControllerVisibilityChange = {
                                                         toolbarVisible.value =
                                                             when (it) {
-                                                                VideoControllerVisibility.VISIBLE.value -> false
-                                                                else -> true
+                                                                VideoControllerVisibility.VISIBLE -> true
+                                                                else -> false
                                                             }
                                                     }
                                                 )
@@ -302,7 +302,7 @@ class MainActivity : ComponentActivity() {
                                         }
 
                                         ToolBarUI(
-                                            visible = ((scrollState.firstVisibleItemScrollOffset == 0) || !scrollState.isScrollInProgress || checkBoxVisible.value) && toolbarVisible.value,
+                                            visible = (scrollState.firstVisibleItemScrollOffset == 0 || !scrollState.isScrollInProgress || checkBoxVisible.value) && toolbarVisible.value,
                                             mediaList = mediaList,
                                             mediaDelete = mediaDeleteFlow,
                                             selectedMedia = selectedMedia,

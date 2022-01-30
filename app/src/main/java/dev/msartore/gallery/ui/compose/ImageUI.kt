@@ -2,7 +2,6 @@ package dev.msartore.gallery.ui.compose
 
 import android.content.Context
 import android.os.Build
-import android.text.format.DateUtils
 import android.util.Size
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.*
@@ -37,6 +36,7 @@ import dev.msartore.gallery.models.MediaClass
 import dev.msartore.gallery.ui.compose.basic.CheckBox
 import dev.msartore.gallery.ui.compose.basic.Icon
 import dev.msartore.gallery.utils.loadImage
+import dev.msartore.gallery.utils.transformMillsToFormattedTime
 import dev.msartore.gallery.utils.vibrate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -168,7 +168,7 @@ fun Context.ImageUI(
                     ) {
                         Text(
                             modifier = Modifier.shadow(20.dp),
-                            text = DateUtils.formatElapsedTime(media.duration / 1000),
+                            text = transformMillsToFormattedTime(media.duration),
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
                             fontFamily = FontFamily.SansSerif,

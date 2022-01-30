@@ -11,9 +11,12 @@ import android.os.Vibrator
 import android.os.VibratorManager
 import android.widget.Toast
 import androidx.compose.ui.geometry.Offset
+import com.google.accompanist.systemuicontroller.SystemUiController
 import java.text.DateFormat
 import java.util.*
+import kotlin.concurrent.fixedRateTimer
 import kotlin.math.abs
+import kotlin.math.roundToInt
 
 
 fun Context.startActivitySafely(intent: Intent) {
@@ -76,3 +79,48 @@ fun ContentResolver.getPath(uri: Uri): String? {
 }
 
 fun getDate(): String? = DateFormat.getDateInstance().format(Date())
+
+fun SystemUiController.changeBarsStatus(visible: Boolean) {
+    cor {
+        isStatusBarVisible = visible // Status bar
+        isNavigationBarVisible = visible // Navigation bar
+        isSystemBarsVisible = visible // Status & Navigation bars
+    }
+}
+
+fun transformMillsToFormattedTime(mills: Long): String {
+
+    val seconds = (mills / 1000f).roundToInt()
+    var formattedText = ""
+
+    if (seconds >= 3600) {
+        formattedText += (seconds / 3600).toString().padStart(2, '0') + ":"
+    }
+
+    formattedText += (seconds / 60).toString().padStart(2, '0') +
+            ":${(seconds % 60).toString().padStart(2, '0')}"
+
+    return formattedText
+}
+
+class CustomTimer(
+    var period: Long,
+    var action: () -> Unit
+) {
+
+    private var timer: Timer? = null
+    private var isOperating = false
+
+    fun stop() {
+        timer?.cancel()
+        timer?.purge()
+        isOperating = false
+    }
+
+    fun start() {
+        if (!isOperating)
+            timer = fixedRateTimer(period = period) {
+                action()
+            }
+    }
+}
