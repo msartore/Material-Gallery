@@ -72,8 +72,8 @@ fun ContentResolver.ImageViewerUI(image: MediaClass) {
                         val translateTest = translate.value + pan
 
                         if (
-                            translateTest.x in (-maxX)..maxX &&
-                            translateTest.y in (-maxY)..maxY ||
+                            translateTest.x in -maxX..maxX &&
+                            translateTest.y in -maxY..maxY ||
                             checkIfNewTransitionIsNearest(
                                 maxX = maxX,
                                 maxY = maxY,

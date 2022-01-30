@@ -45,7 +45,6 @@ fun Dialog(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                
                 Text(
                     text = title,
                     fontWeight = FontWeight.Bold,
