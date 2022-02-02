@@ -2,6 +2,7 @@ package dev.msartore.gallery.ui.compose
 
 import android.content.ContentResolver
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.gestures.forEachGesture
 import androidx.compose.foundation.layout.Box
@@ -10,10 +11,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,7 +34,10 @@ import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun ContentResolver.ImageViewerUI(image: MediaClass) {
+fun ContentResolver.ImageViewerUI(
+    image: MediaClass,
+    changeMedia: (ChangeMediaState) -> Unit,
+) {
 
     val context = LocalContext.current
     val thumbnail = remember { mutableStateOf<ImageBitmap?>(null) }
@@ -44,6 +45,7 @@ fun ContentResolver.ImageViewerUI(image: MediaClass) {
     val translate = remember { mutableStateOf(Offset(0f, 0f)) }
     val rotation = remember { mutableStateOf(0f) }
     val imageSize = remember { getImageSize(image = image.uri)}
+    val slideMemory = remember { mutableStateListOf<Float>() }
 
     LaunchedEffect(key1 = true) {
         withContext(Dispatchers.IO) {
@@ -57,6 +59,13 @@ fun ContentResolver.ImageViewerUI(image: MediaClass) {
                     .toBitmap()
                     .asImageBitmap()
         }
+
+        image.actionReset = {
+            image.imageTransform.value = false
+            scale.value = 1f
+            translate.value = Offset(0f, 0f)
+            rotation.value = 0f
+        }
     }
 
     Box(
@@ -64,8 +73,17 @@ fun ContentResolver.ImageViewerUI(image: MediaClass) {
             .clip(RectangleShape)
             .fillMaxSize()
             .pointerInput(Unit) {
+                detectTapGestures(
+                    onDoubleTap = {
+                        if (rotation.value != 0f || scale.value != 1f) {
+                            image.actionReset()
+                        }
+                    }
+                )
+            }
+            .pointerInput(Unit) {
                 forEachGesture {
-                    detectTransformGestures { _, pan, zoom, rot ->
+                    detectTransformGestures { centroid, pan, zoom, rot ->
 
                         val maxX = imageSize.width * (scale.value - 1) / 2
                         val maxY = imageSize.height * (scale.value - 1) / 2
@@ -95,6 +113,30 @@ fun ContentResolver.ImageViewerUI(image: MediaClass) {
                         }
 
                         rotation.value += rot
+
+                        if (rotation.value != 0f || scale.value != 1f) {
+                            image.imageTransform.value = true
+                        }
+                        else {
+
+                            slideMemory.add(centroid.x)
+
+                            if (slideMemory.size == 2) {
+
+                                when {
+                                    slideMemory[0] < slideMemory[1] -> {
+                                        changeMedia(ChangeMediaState.Backward)
+                                    }
+                                    slideMemory[0] > slideMemory[1] -> {
+                                        changeMedia(ChangeMediaState.Forward)
+                                    }
+                                }
+                            }
+
+                            if (slideMemory.size > 3) {
+                                slideMemory.clear()
+                            }
+                        }
                     }
                 }
             }
@@ -123,4 +165,9 @@ fun ContentResolver.ImageViewerUI(image: MediaClass) {
                 color = MaterialTheme.colorScheme.primary
             )
     }
+}
+
+enum class ChangeMediaState {
+    Forward,
+    Backward,
 }

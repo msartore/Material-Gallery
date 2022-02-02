@@ -7,12 +7,14 @@ import androidx.compose.ui.graphics.ImageBitmap
 
 open class MediaClass(
     val uri: Uri,
-    val index: Int,
     val name: String,
     val size: Int,
     val date: Long,
     val duration: Long? = null,
-    var selected: MutableState<Boolean> = mutableStateOf(false)
+    val imageTransform: MutableState<Boolean> = mutableStateOf(false),
+    var selected: MutableState<Boolean> = mutableStateOf(false),
+    var actionReset: () -> Unit = {},
+    var index: Int = -1,
 )
 
 data class DatabaseInfo(

@@ -45,6 +45,7 @@ fun Activity.ToolBarUI(
     checkBoxVisible: MutableState<Boolean>,
     creditsDialogStatus: MutableState<Boolean>,
     backgroundColor: Color,
+    onBackPressed: () -> Unit,
     onPDFClick: () -> Unit,
 ) {
 
@@ -81,10 +82,18 @@ fun Activity.ToolBarUI(
             if (selectedMedia.value != null) {
                 Icon(
                     imageVector = Icons.Rounded.ArrowBack,
-                    tint = Color.White,
+                    tint = Color.White
                 ) {
-                    selectedMedia.value = null
+                    onBackPressed()
                 }
+
+                if (selectedMedia.value?.imageTransform?.value == true)
+                    Icon(
+                        id = R.drawable.round_restart_alt_24,
+                        tint = Color.White
+                        ) {
+                        selectedMedia.value?.actionReset?.let { it() }
+                    }
 
                 Icon(
                     id = R.drawable.baseline_share_24,

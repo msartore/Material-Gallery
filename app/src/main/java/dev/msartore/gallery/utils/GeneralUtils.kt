@@ -12,11 +12,11 @@ import android.os.VibratorManager
 import android.widget.Toast
 import androidx.compose.ui.geometry.Offset
 import com.google.accompanist.systemuicontroller.SystemUiController
+import com.google.android.exoplayer2.ExoPlayer
 import java.text.DateFormat
 import java.util.*
 import kotlin.math.abs
 import kotlin.math.roundToInt
-
 
 fun Context.startActivitySafely(intent: Intent) {
     runCatching {
@@ -100,4 +100,8 @@ fun transformMillsToFormattedTime(mills: Long): String {
             ":${(seconds % 60).toString().padStart(2, '0')}"
 
     return formattedText
+}
+
+fun getExoPlayer(context: Context): ExoPlayer {
+    return ExoPlayer.Builder(context).build()
 }

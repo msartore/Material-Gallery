@@ -36,6 +36,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
+import com.google.android.exoplayer2.ExoPlayer
 import dev.msartore.gallery.models.DeleteMediaVars
 import dev.msartore.gallery.models.LoadingStatus
 import dev.msartore.gallery.models.Media
@@ -68,6 +69,7 @@ class MainActivity : ComponentActivity() {
     private val dialogLoadingStatus = LoadingStatus()
     private val updateCLDCache = MutableSharedFlow<Media>()
     private val concurrentLinkedQueueCache = ConcurrentLinkedQueue<Media>()
+    private var exoPlayer: ExoPlayer? = null
     private var intentSaveLocation =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { activityResult ->
             if (activityResult.resultCode == RESULT_OK) {
@@ -139,8 +141,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
 
         super.onCreate(savedInstanceState)
+
+        val context = this
         val mediaDeleteFlow = MutableSharedFlow<DeleteMediaVars>()
-        var counterMedia = 0
         val loading = mutableStateOf(true)
         val getContent = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
             if (it.resultCode != RESULT_OK) {
@@ -194,9 +197,14 @@ class MainActivity : ComponentActivity() {
 
                         mediaList.clear()
                         concurrentLinkedQueueCache.clear()
-                        mediaList.addAll(contentResolver.queryImageMediaStore { counterMedia = it })
-                        mediaList.addAll(contentResolver.queryVideoMediaStore(counter = counterMedia) { counterMedia = it })
+
+                        mediaList.addAll(contentResolver.queryImageMediaStore())
+                        mediaList.addAll(contentResolver.queryVideoMediaStore())
                         mediaList.sortByDescending { it.date }
+
+                        mediaList.forEachIndexed { index, mediaClass ->
+                            mediaClass.index = index
+                        }
 
                         delay(10)
 
@@ -206,16 +214,21 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+        cor {
+            exoPlayer = getExoPlayer(context)
+        }
+
         setContent {
 
-            val selectedMedia = remember { mutableStateOf<MediaClass?>(null) }
             val toolbarVisible = remember { mutableStateOf(true) }
             val creditsDialogStatus = remember { mutableStateOf(false) }
+            val mediaIndex = remember { mutableStateOf<Int?>(null) }
+            val selectedMedia = remember { mutableStateOf<MediaClass?>(null) }
 
             GalleryTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = if (selectedMedia.value != null) Color.Black else MaterialTheme.colorScheme.background
+                    color = if (mediaIndex.value != null) Color.Black else MaterialTheme.colorScheme.background
                 ) {
                     val scrollState = rememberLazyListState()
 
@@ -246,7 +259,7 @@ class MainActivity : ComponentActivity() {
                                         }
 
                                         AnimatedVisibility(
-                                            visible = selectedMedia.value == null && mediaList.isNotEmpty(),
+                                            visible = mediaIndex.value == null && mediaList.isNotEmpty(),
                                             enter = expandVertically(),
                                             exit = fadeOut()
                                         ) {
@@ -257,48 +270,82 @@ class MainActivity : ComponentActivity() {
                                                     lazyListState = scrollState,
                                                     mediaList = mediaList,
                                                     checkBoxVisible = checkBoxVisible,
-                                                ) {
-                                                    selectedMedia.value = it
+                                                ) { mediaClass ->
+                                                    mediaIndex.value = mediaClass.index
+                                                    selectedMedia.value = mediaList.find { it.index == mediaIndex.value }
                                                 }
                                         }
 
                                         AnimatedVisibility(
-                                            visible = selectedMedia.value != null && selectedMedia.value?.duration == null,
+                                            visible = mediaIndex.value != null,
                                             enter = scaleIn()
                                         ) {
 
-                                            if (selectedMedia.value != null) {
-
-                                                BackHandler(enabled = true){
-                                                    selectedMedia.value = null
-                                                }
-
-                                                contentResolver.ImageViewerUI(selectedMedia.value!!)
+                                            BackHandler(enabled = true){
+                                                mediaIndex.value = null
+                                                selectedMedia.value = null
                                             }
-                                        }
 
-                                        AnimatedVisibility(
-                                            visible = selectedMedia.value != null && selectedMedia.value?.duration != null,
-                                            enter = scaleIn()
-                                        ) {
+                                            if (mediaIndex.value != null)
+                                                AnimatedContent(
+                                                    targetState = mediaIndex.value,
+                                                    transitionSpec = {
+                                                        if (targetState!! > initialState!!) {
+                                                            slideInHorizontally { width -> width } + fadeIn() with
+                                                                    slideOutHorizontally { width -> -width } + fadeOut()
+                                                        } else {
+                                                            slideInHorizontally { width -> -width } + fadeIn() with
+                                                                    slideOutHorizontally { width -> width } + fadeOut()
+                                                        }.using(
+                                                            SizeTransform(clip = false)
+                                                        )
+                                                    }
+                                                ) {
 
-                                            if (selectedMedia.value != null) {
+                                                    if (selectedMedia.value != null) {
+                                                        if (selectedMedia.value?.duration == null)
+                                                            contentResolver.ImageViewerUI(selectedMedia.value!!) { status ->
 
-                                                VideoViewerUI(
-                                                    selectedMedia.value!!.uri,
-                                                    onBackPressedCallback = {
-                                                        selectedMedia.value = null
-                                                        toolbarVisible.value = true
-                                                    },
-                                                    onControllerVisibilityChange = {
-                                                        toolbarVisible.value =
-                                                            when (it) {
-                                                                VideoControllerVisibility.VISIBLE -> true
-                                                                else -> false
+                                                                mediaIndex.value =
+                                                                    calculatePossibleIndex(
+                                                                        status,
+                                                                        mediaIndex.value!!
+                                                                    )
+
+                                                                if (selectedMedia.value?.index != mediaIndex.value)
+                                                                    selectedMedia.value = mediaList.find { it.index == mediaIndex.value }
+                                                            }
+                                                        else
+                                                            VideoViewerUI(
+                                                                exoPlayer = exoPlayer!!,
+                                                                selectedMedia.value!!.uri,
+                                                                onClose = {
+                                                                    exoPlayer?.playWhenReady = false
+                                                                    exoPlayer?.stop()
+                                                                    mediaIndex.value = null
+                                                                    selectedMedia.value = null
+                                                                    toolbarVisible.value = true
+                                                                },
+                                                                onControllerVisibilityChange = {
+                                                                    toolbarVisible.value =
+                                                                        when (it) {
+                                                                            VideoControllerVisibility.VISIBLE -> true
+                                                                            else -> false
+                                                                        }
+                                                                }
+                                                            ) { status ->
+
+                                                                mediaIndex.value =
+                                                                    calculatePossibleIndex(
+                                                                        status,
+                                                                        mediaIndex.value!!
+                                                                    )
+
+                                                                if (selectedMedia.value?.index != mediaIndex.value)
+                                                                    selectedMedia.value = mediaList.find { it.index == mediaIndex.value }
                                                             }
                                                     }
-                                                )
-                                            }
+                                                }
                                         }
 
                                         ToolBarUI(
@@ -309,7 +356,7 @@ class MainActivity : ComponentActivity() {
                                             checkBoxVisible = checkBoxVisible,
                                             creditsDialogStatus = creditsDialogStatus,
                                             backgroundColor =
-                                            if (selectedMedia.value == null) {
+                                            if (mediaIndex.value == null) {
                                                 if (scrollState.firstVisibleItemScrollOffset == 0) {
                                                     MaterialTheme.colorScheme.background
                                                 } else {
@@ -320,11 +367,16 @@ class MainActivity : ComponentActivity() {
                                             onPDFClick = {
 
                                                 val intentCreateDocument = Intent(Intent.ACTION_CREATE_DOCUMENT)
+
                                                 intentCreateDocument.addCategory(Intent.CATEGORY_OPENABLE)
                                                 intentCreateDocument.type = "application/pdf"
                                                 intentCreateDocument.putExtra(Intent.EXTRA_TITLE, "Material Gallery ${getDate()}.pdf")
 
                                                 intentSaveLocation.launch(intentCreateDocument)
+                                            },
+                                            onBackPressed = {
+                                                selectedMedia.value = null
+                                                mediaIndex.value = null
                                             }
                                         )
 
@@ -340,8 +392,7 @@ class MainActivity : ComponentActivity() {
                                             ) {
                                                 CircularProgressIndicator(
                                                     modifier = Modifier
-                                                        .height(100.dp)
-                                                        .width(100.dp),
+                                                        .size(40.dp),
                                                     color = MaterialTheme.colorScheme.primary
                                                 )
                                             }
@@ -439,6 +490,23 @@ class MainActivity : ComponentActivity() {
         checkBoxVisible.value = false
     }
 
+    private fun calculatePossibleIndex(
+        status: ChangeMediaState,
+        index: Int
+    ): Int {
+
+        return if (status == ChangeMediaState.Forward)
+            if (index + 1 in 0 until mediaList.size)
+                    index + 1
+                else
+                    index
+            else
+                if (index - 1 in 0 until mediaList.size)
+                    index - 1
+                else
+                    index
+    }
+
     private suspend fun setVarsAndDeleteImage(
         photoUri: Uri,
         actionAfterDelete: (() -> Unit)? = null
@@ -459,6 +527,8 @@ class MainActivity : ComponentActivity() {
             unregisterContentResolver(it.first)
             unregisterContentResolver(it.second)
         }
+
+        exoPlayer?.release()
     }
 }
 

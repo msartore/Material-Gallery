@@ -27,7 +27,7 @@ import dev.msartore.gallery.models.MediaInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-fun ContentResolver.queryImageMediaStore(counterUpdater: (Int) -> Unit): List<MediaClass> {
+fun ContentResolver.queryImageMediaStore(): List<MediaClass> {
 
     val imageList = mutableListOf<MediaClass>()
 
@@ -64,7 +64,6 @@ fun ContentResolver.queryImageMediaStore(counterUpdater: (Int) -> Unit): List<Me
             cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DISPLAY_NAME)
         val sizeColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.SIZE)
         val dateColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATE_TAKEN)
-        var counterLocal = 0
 
         while (cursor.moveToNext()) {
 
@@ -78,21 +77,14 @@ fun ContentResolver.queryImageMediaStore(counterUpdater: (Int) -> Unit): List<Me
                 id
             )
 
-            imageList.add(MediaClass(contentUri, counterLocal, name, size, date))
-
-            counterLocal++
+            imageList.add(MediaClass(contentUri, name, size, date))
         }
-
-        counterUpdater(counterLocal)
     }
 
     return imageList
 }
 
-fun ContentResolver.queryVideoMediaStore(
-    counter: Int,
-    counterUpdater: (Int) -> Unit
-): List<MediaClass> {
+fun ContentResolver.queryVideoMediaStore(): List<MediaClass> {
 
     val videoList = mutableListOf<MediaClass>()
 
@@ -125,7 +117,6 @@ fun ContentResolver.queryVideoMediaStore(
 
     query?.use { cursor ->
 
-        var counterLocal = counter
         val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Video.Media._ID)
         val nameColumn =
             cursor.getColumnIndexOrThrow(MediaStore.Video.Media.DISPLAY_NAME)
@@ -146,12 +137,8 @@ fun ContentResolver.queryVideoMediaStore(
                 id
             )
 
-            videoList.add(MediaClass(contentUri, counterLocal, name, size, date, duration))
-
-            counterLocal++
+            videoList.add(MediaClass(contentUri, name, size, date, duration))
         }
-
-        counterUpdater(counterLocal)
     }
 
     return videoList
