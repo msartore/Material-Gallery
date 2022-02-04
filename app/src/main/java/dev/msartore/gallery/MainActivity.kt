@@ -119,8 +119,6 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                deleteAction?.invoke()
-
                 updateNeeded = true
 
                 runCatching {
@@ -182,16 +180,17 @@ class MainActivity : ComponentActivity() {
         }
 
         cor {
-            mediaDeleteFlow.collect {
+            mediaDeleteFlow.collect { deleteMediaVars ->
                 deleteInProgress = true
                 checkBoxVisible.value = false
-                imageDeleteCounter = it.listUri.size
+                imageDeleteCounter = deleteMediaVars.listUri.size
 
-                it.listUri.forEach { uri ->
-                    setVarsAndDeleteImage(
-                        uri,
-                        it.action
-                    )
+                if (deleteMediaVars.listUri.size == 1) {
+                    deleteAction = deleteMediaVars.action
+                }
+
+                deleteMediaVars.listUri.forEach { uri ->
+                    setVarsAndDeleteImage(uri)
                 }
             }
         }
@@ -218,6 +217,11 @@ class MainActivity : ComponentActivity() {
 
                         loading.value = false
                         updateNeeded = false
+
+                        if (deleteAction != null) {
+                            deleteAction?.invoke()
+                            deleteAction = null
+                        }
                     }
             }
         }
@@ -402,9 +406,9 @@ class MainActivity : ComponentActivity() {
 
                                                 intentSaveLocation.launch(intentCreateDocument)
                                             },
-                                            onBackPressed = {
-                                                selectedMedia.value = null
+                                            resetToList = {
                                                 mediaIndex.value = null
+                                                selectedMedia.value = null
                                             }
                                         )
 
@@ -549,15 +553,12 @@ class MainActivity : ComponentActivity() {
     }
 
     private suspend fun setVarsAndDeleteImage(
-        photoUri: Uri,
-        actionAfterDelete: (() -> Unit)? = null
+        photoUri: Uri
     ) {
         deletedImageUri = photoUri
-        deleteAction = actionAfterDelete
 
         contentResolver.deletePhotoFromExternalStorage(photoUri, intentSenderLauncher) {
             deleteInProgress = false
-            cor { updateList.emit(Unit) }
         }
     }
 
