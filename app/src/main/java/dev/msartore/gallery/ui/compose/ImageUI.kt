@@ -57,8 +57,7 @@ fun Context.ImageUI(
     val thumbnail = remember { mutableStateOf<ImageBitmap?>(null) }
     val errorState = remember { mutableStateOf(false) }
 
-    LaunchedEffect(key1 = thumbnail.value == null) {
-
+    LaunchedEffect(key1 = true) {
         runCatching {
             withContext(Dispatchers.IO) {
 

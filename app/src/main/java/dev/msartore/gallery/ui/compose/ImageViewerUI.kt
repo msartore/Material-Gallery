@@ -160,7 +160,7 @@ fun ContentResolver.ImageViewerUI(
         else
             CircularProgressIndicator(
                 modifier = Modifier
-                    .size(100.dp)
+                    .size(40.dp)
                     .align(Alignment.Center),
                 color = MaterialTheme.colorScheme.primary
             )
