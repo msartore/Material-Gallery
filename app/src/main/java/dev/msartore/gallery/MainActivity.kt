@@ -23,8 +23,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,7 +38,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
+import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import com.google.android.exoplayer2.ExoPlayer
+import dev.msartore.gallery.MainActivity.BasicInfo.isDarkTheme
 import dev.msartore.gallery.models.DeleteMediaVars
 import dev.msartore.gallery.models.LoadingStatus
 import dev.msartore.gallery.models.Media
@@ -56,6 +60,10 @@ import java.util.concurrent.ConcurrentLinkedQueue
 @SuppressLint("NewApi")
 @OptIn(ExperimentalAnimationApi::class, ExperimentalFoundationApi::class)
 class MainActivity : ComponentActivity() {
+
+    object BasicInfo{
+        val isDarkTheme = mutableStateOf(false)
+    }
 
     private var imageDeleteCounter = 0
     private var deleteInProgress = false
@@ -222,15 +230,21 @@ class MainActivity : ComponentActivity() {
 
             val toolbarVisible = remember { mutableStateOf(true) }
             val creditsDialogStatus = remember { mutableStateOf(false) }
+            val infoDialogStatus = remember { mutableStateOf(false) }
             val mediaIndex = remember { mutableStateOf<Int?>(null) }
             val selectedMedia = remember { mutableStateOf<MediaClass?>(null) }
+            val resetStatusBarColor = remember { mutableStateOf({}) }
 
-            GalleryTheme {
+            GalleryTheme(
+                changeStatusBarColor = resetStatusBarColor,
+                isDarkTheme = isDarkTheme,
+            ) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = if (mediaIndex.value != null) Color.Black else MaterialTheme.colorScheme.background
+                    color = if (mediaIndex.value != null) Color.Black else colorScheme.background
                 ) {
                     val scrollState = rememberLazyListState()
+                    val systemUiController = rememberSystemUiController()
 
                     Box(modifier = Modifier.fillMaxSize()) {
 
@@ -284,6 +298,19 @@ class MainActivity : ComponentActivity() {
                                             BackHandler(enabled = true){
                                                 mediaIndex.value = null
                                                 selectedMedia.value = null
+                                            }
+
+                                            DisposableEffect(key1 = true) {
+
+                                                systemUiController.setSystemBarsColor(
+                                                    color = Color.Black,
+                                                    darkIcons = false
+                                                )
+
+                                                onDispose {
+                                                    resetStatusBarColor.value()
+                                                    systemUiController.changeBarsStatus(true)
+                                                }
                                             }
 
                                             if (mediaIndex.value != null)
@@ -355,12 +382,13 @@ class MainActivity : ComponentActivity() {
                                             selectedMedia = selectedMedia,
                                             checkBoxVisible = checkBoxVisible,
                                             creditsDialogStatus = creditsDialogStatus,
+                                            infoDialogStatus = infoDialogStatus,
                                             backgroundColor =
                                             if (mediaIndex.value == null) {
                                                 if (scrollState.firstVisibleItemScrollOffset == 0) {
-                                                    MaterialTheme.colorScheme.background
+                                                    colorScheme.background
                                                 } else {
-                                                    MaterialTheme.colorScheme.surface
+                                                    colorScheme.surface
                                                 }
                                             }
                                             else Color.Transparent,
@@ -393,7 +421,7 @@ class MainActivity : ComponentActivity() {
                                                 CircularProgressIndicator(
                                                     modifier = Modifier
                                                         .size(40.dp),
-                                                    color = MaterialTheme.colorScheme.primary
+                                                    color = colorScheme.primary
                                                 )
                                             }
                                         }
@@ -435,7 +463,7 @@ class MainActivity : ComponentActivity() {
                                                         .fillMaxWidth()
                                                         .height(160.dp)
                                                         .background(
-                                                            color = MaterialTheme.colorScheme.onSecondary,
+                                                            color = colorScheme.onSecondary,
                                                             shape = RoundedCornerShape(16.dp)
                                                         )
                                                         .padding(25.dp),
@@ -457,7 +485,7 @@ class MainActivity : ComponentActivity() {
                                                         CircularProgressIndicator(
                                                             modifier = Modifier
                                                                 .size(45.dp),
-                                                            color = MaterialTheme.colorScheme.primary
+                                                            color = colorScheme.primary
                                                         )
 
                                                         Text(
@@ -473,6 +501,19 @@ class MainActivity : ComponentActivity() {
                                             activity =  this@MainActivity,
                                             status = creditsDialogStatus,
                                         )
+
+                                        selectedMedia.value?.let {
+                                            if (selectedMedia.value?.duration == null)
+                                                contentResolver.InfoImageDialogUI(
+                                                    status = infoDialogStatus,
+                                                    mediaClass = it,
+                                                )
+                                            else
+                                                contentResolver.InfoVideoDialogUI(
+                                                    status = infoDialogStatus,
+                                                    mediaClass = it
+                                                )
+                                        }
                                     }
                                 )
                             }

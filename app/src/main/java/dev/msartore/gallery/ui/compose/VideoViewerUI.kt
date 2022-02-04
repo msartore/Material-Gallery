@@ -26,8 +26,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.MediaItem
@@ -38,6 +36,7 @@ import dev.msartore.gallery.models.PlayerEventListener
 import dev.msartore.gallery.ui.compose.basic.Icon
 import dev.msartore.gallery.utils.changeBarsStatus
 import dev.msartore.gallery.utils.cor
+import dev.msartore.gallery.utils.getLifecycleEventObserver
 import dev.msartore.gallery.utils.transformMillsToFormattedTime
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -46,8 +45,8 @@ import kotlinx.coroutines.withContext
 fun VideoViewerUI(
     exoPlayer: ExoPlayer,
     uri: Uri,
-    onControllerVisibilityChange: (VideoControllerVisibility) -> Unit,
     onClose: () -> Unit,
+    onControllerVisibilityChange: (VideoControllerVisibility) -> Unit,
     onChangeMedia: (ChangeMediaState) -> Unit
 ) {
     val lifecycle = LocalLifecycleOwner.current.lifecycle
@@ -119,39 +118,39 @@ fun VideoViewerUI(
         )
     }
 
+    BackHandler(true) {
+        timer.stop()
+        onClose()
+    }
+
     LaunchedEffect(key1 = true) {
         exoPlayer.setMediaItem(MediaItem.fromUri(uri))
         exoPlayer.prepare()
     }
 
-    BackHandler(true){
-        timer.stop()
-        onClose()
-        systemUiController.changeBarsStatus(false)
-    }
-
     DisposableEffect(lifecycle) {
+
         val lifecycleObserver = getLifecycleEventObserver(
             onResume = {
                 exoPlayer.playWhenReady = true
                 timer.start()
             },
-            onStop = {
+            onPause = {
                 exoPlayer.playWhenReady = false
             },
             onDestroy = {
+                exoPlayer.release()
                 timer.stop()
-                onClose()
-                systemUiController.changeBarsStatus(false)
             }
         )
+
         exoPlayer.addListener(listener)
         lifecycle.addObserver(lifecycleObserver)
+
         onDispose {
             lifecycle.removeObserver(lifecycleObserver)
         }
     }
-
 
     AndroidView(
         modifier = Modifier
@@ -183,7 +182,7 @@ fun VideoViewerUI(
                             exoPlayer.playWhenReady = false
                             exoPlayer.stop()
                             timer.stop()
-                            systemUiController.changeBarsStatus(false)
+                            systemUiController.changeBarsStatus(true)
 
                             when {
                                 slideMemory[0] < slideMemory[1] ->
@@ -316,7 +315,7 @@ fun VideoViewerUI(
                         colors = SliderDefaults.colors(
                             activeTickColor = Color.Transparent,
                             inactiveTickColor = Color.Transparent,
-                            inactiveTrackColor = MaterialTheme.colorScheme.onBackground,
+                            inactiveTrackColor = Color.White,
                             activeTrackColor = MaterialTheme.colorScheme.primary,
                             thumbColor = MaterialTheme.colorScheme.primary
                         )
@@ -326,30 +325,6 @@ fun VideoViewerUI(
         }
     }
 }
-
-private fun getLifecycleEventObserver(
-    onResume: () -> Unit,
-    onStop: () -> Unit,
-    onDestroy: () -> Unit,
-): LifecycleEventObserver =
-    LifecycleEventObserver { _, event ->
-        when (event) {
-            Lifecycle.Event.ON_CREATE -> {}
-            Lifecycle.Event.ON_START -> {
-                onResume()
-            }
-            Lifecycle.Event.ON_RESUME -> {
-                onResume()
-            }
-            Lifecycle.Event.ON_PAUSE -> {
-                onStop()
-            }
-            Lifecycle.Event.ON_STOP -> {}
-            Lifecycle.Event.ON_DESTROY -> onDestroy()
-            Lifecycle.Event.ON_ANY -> {}
-            else -> throw IllegalStateException()
-        }
-    }
 
 enum class VideoControllerVisibility(val value: Int) {
     GONE(0),

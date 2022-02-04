@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
@@ -29,11 +30,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.msartore.gallery.MainActivity.BasicInfo.isDarkTheme
 import dev.msartore.gallery.R
 import dev.msartore.gallery.models.DeleteMediaVars
 import dev.msartore.gallery.models.MediaClass
 import dev.msartore.gallery.ui.compose.basic.Icon
-import dev.msartore.gallery.utils.*
+import dev.msartore.gallery.utils.checkCameraHardware
+import dev.msartore.gallery.utils.cor
+import dev.msartore.gallery.utils.shareImage
+import dev.msartore.gallery.utils.startActivitySafely
 import kotlinx.coroutines.flow.MutableSharedFlow
 
 @Composable
@@ -44,6 +49,7 @@ fun Activity.ToolBarUI(
     selectedMedia: MutableState<MediaClass?>,
     checkBoxVisible: MutableState<Boolean>,
     creditsDialogStatus: MutableState<Boolean>,
+    infoDialogStatus: MutableState<Boolean>,
     backgroundColor: Color,
     onBackPressed: () -> Unit,
     onPDFClick: () -> Unit,
@@ -104,6 +110,14 @@ fun Activity.ToolBarUI(
                     }
                 }
 
+                if (selectedMedia.value?.uri != null)
+                    Icon(
+                        imageVector = Icons.Rounded.Info,
+                        tint = Color.White
+                    ) {
+                        infoDialogStatus.value = true
+                    }
+
                 Icon(
                     imageVector = Icons.Rounded.Delete,
                     tint = Color.White
@@ -132,14 +146,14 @@ fun Activity.ToolBarUI(
                         text = "Gallery",
                         fontSize = 20.sp,
                         textAlign = TextAlign.Center,
-                        color = Color.DarkGray,
+                        color = if (isDarkTheme.value) Color.White else Color.Black,
                         fontWeight = FontWeight.SemiBold,
                         fontFamily = FontFamily.SansSerif
                     )
 
                     Icon(
                         painter = painterResource(id = R.drawable.baseline_photo_camera_24),
-                        tint = Color.DarkGray,
+                        tint = if (isDarkTheme.value) Color.White else Color.Black,
                         shadowEnabled = false
                     ) {
                         if (intentCamera != null) {

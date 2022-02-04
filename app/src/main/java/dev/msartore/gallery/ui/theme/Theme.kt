@@ -4,6 +4,7 @@ import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.ui.platform.LocalContext
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 
@@ -65,11 +66,12 @@ private val DarkColorScheme = lightColorScheme(
 
 @Composable
 fun GalleryTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
+    isDarkTheme: MutableState<Boolean>,
+    changeStatusBarColor: MutableState<() -> Unit>,
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
+    val darkTheme = isSystemInDarkTheme()
     val systemUiController = rememberSystemUiController()
     val colorScheme = when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
@@ -79,6 +81,15 @@ fun GalleryTheme(
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
     }
+
+    changeStatusBarColor.value = {
+        systemUiController.setSystemBarsColor(
+            color = colorScheme.background,
+            darkIcons = !darkTheme
+        )
+    }
+
+    isDarkTheme.value = darkTheme
 
     systemUiController.setSystemBarsColor(
         color = colorScheme.background,

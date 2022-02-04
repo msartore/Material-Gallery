@@ -105,7 +105,7 @@ fun ContentResolver.queryVideoMediaStore(): List<MediaClass> {
         MediaStore.Video.Media.SIZE,
         MediaStore.Video.Media.DURATION,
         MediaStore.Images.Media.DATE_TAKEN,
-        )
+    )
 
     val query = this.query(
         collection,

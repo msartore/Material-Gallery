@@ -11,6 +11,8 @@ import android.os.Vibrator
 import android.os.VibratorManager
 import android.widget.Toast
 import androidx.compose.ui.geometry.Offset
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import com.google.accompanist.systemuicontroller.SystemUiController
 import com.google.android.exoplayer2.ExoPlayer
 import java.text.DateFormat
@@ -86,6 +88,24 @@ fun SystemUiController.changeBarsStatus(visible: Boolean) {
         isSystemBarsVisible = visible // Status & Navigation bars
     }
 }
+
+fun getLifecycleEventObserver(
+    onResume: () -> Unit,
+    onPause: () -> Unit,
+    onDestroy: () -> Unit
+): LifecycleEventObserver =
+    LifecycleEventObserver { _, event ->
+        when (event) {
+            Lifecycle.Event.ON_CREATE -> {}
+            Lifecycle.Event.ON_START -> {}
+            Lifecycle.Event.ON_RESUME -> onResume()
+            Lifecycle.Event.ON_PAUSE -> onPause()
+            Lifecycle.Event.ON_STOP -> {}
+            Lifecycle.Event.ON_DESTROY -> onDestroy()
+            Lifecycle.Event.ON_ANY -> {}
+            else -> throw IllegalStateException()
+        }
+    }
 
 fun transformMillsToFormattedTime(mills: Long): String {
 
