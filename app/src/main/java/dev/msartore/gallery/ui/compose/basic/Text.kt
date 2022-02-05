@@ -21,7 +21,6 @@ fun TextAuto(
         Text(
             text = stringResource(id = id),
             color = if (isDarkTheme.value) Color.White else Color.Black,
-            fontFamily = FontFamily.SansSerif,
             fontWeight = fontWeight,
             style = style
         )
@@ -29,7 +28,6 @@ fun TextAuto(
         Text(
             text = text.toString(),
             color = if (isDarkTheme.value) Color.White else Color.Black,
-            fontFamily = FontFamily.SansSerif,
             fontWeight = fontWeight,
             style = style
         )

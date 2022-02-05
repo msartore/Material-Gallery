@@ -8,7 +8,8 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.ui.platform.LocalContext
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 
-private val LightColorScheme = darkColorScheme(
+private val LightThemeColors = lightColorScheme(
+
     primary = md_theme_light_primary,
     onPrimary = md_theme_light_onPrimary,
     primaryContainer = md_theme_light_primaryContainer,
@@ -35,8 +36,8 @@ private val LightColorScheme = darkColorScheme(
     inverseOnSurface = md_theme_light_inverseOnSurface,
     inverseSurface = md_theme_light_inverseSurface,
 )
+private val DarkThemeColors = darkColorScheme(
 
-private val DarkColorScheme = lightColorScheme(
     primary = md_theme_dark_primary,
     onPrimary = md_theme_dark_onPrimary,
     primaryContainer = md_theme_dark_primaryContainer,
@@ -78,8 +79,8 @@ fun GalleryTheme(
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
+        darkTheme -> DarkThemeColors
+        else -> LightThemeColors
     }
 
     changeStatusBarColor.value = {
