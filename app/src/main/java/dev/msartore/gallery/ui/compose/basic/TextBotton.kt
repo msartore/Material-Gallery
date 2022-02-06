@@ -22,7 +22,7 @@ fun TextButton(
             .clickable {
                 onClick()
             }
-            .padding(8.dp),
+            .padding(vertical = 8.dp, horizontal = 16.dp),
         text = text,
         color = MaterialTheme.colorScheme.primary
     )

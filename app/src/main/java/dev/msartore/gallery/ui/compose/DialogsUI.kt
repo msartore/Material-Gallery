@@ -58,7 +58,8 @@ fun CreditsDialogUI(
             )
 
             Column(
-                modifier = Modifier.padding(16.dp),
+                modifier = Modifier
+                    .padding(16.dp),
             ) {
                 Text(
                     text = "Assets used :\n - Glide (Image library)\n - storyset.com (Illustrations)",
@@ -80,7 +81,8 @@ fun CreditsDialogUI(
                 )
             }
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth(),
                 horizontalArrangement = Arrangement.End,
             ) {
                 TextButton(
@@ -120,7 +122,7 @@ fun ContentResolver.InfoImageDialogUI(
                         shape = RoundedCornerShape(16.dp)
                     )
                     .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.SpaceAround,
             ) {
 
                 TextAuto(
@@ -132,6 +134,7 @@ fun ContentResolver.InfoImageDialogUI(
                 Column(
                     modifier = Modifier
                         .padding(16.dp)
+                        .height(250.dp)
                         .verticalScroll(scrollState),
                 ) {
 
@@ -212,7 +215,8 @@ fun ContentResolver.InfoImageDialogUI(
                     )
                 }
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth(),
                     horizontalArrangement = Arrangement.End,
                 ) {
                     TextButton(
@@ -248,9 +252,9 @@ fun ContentResolver.InfoVideoDialogUI(
                     color = MaterialTheme.colorScheme.background,
                     shape = RoundedCornerShape(16.dp)
                 )
-                .padding(16.dp)
-                .verticalScroll(scrollState),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+                .verticalScroll(scrollState)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.SpaceAround,
         ) {
 
             TextAuto(
@@ -260,7 +264,9 @@ fun ContentResolver.InfoVideoDialogUI(
             )
 
             Column(
-                modifier = Modifier.padding(16.dp),
+                modifier = Modifier
+                    .padding(16.dp)
+                    .height(250.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 TextAuto(
@@ -285,7 +291,8 @@ fun ContentResolver.InfoVideoDialogUI(
                 )
             }
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth(),
                 horizontalArrangement = Arrangement.End,
             ) {
                 TextButton(
