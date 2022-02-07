@@ -78,7 +78,7 @@ fun Context.ImageUI(
                     else {
                         thumbnail.value = contentResolver.loadImage(media, 100)
 
-                        thumbnail.value = contentResolver.loadImage(media, 10)
+                        thumbnail.value = contentResolver.loadImage(media, 7)
                     }
 
                     updateCLDCache.emit(Media(thumbnail.value, media.index))

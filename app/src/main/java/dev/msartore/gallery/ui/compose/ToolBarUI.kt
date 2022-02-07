@@ -51,7 +51,7 @@ fun Activity.ToolBarUI(
     creditsDialogStatus: MutableState<Boolean>,
     infoDialogStatus: MutableState<Boolean>,
     backgroundColor: Color,
-    resetToList: () -> Unit,
+    backToList: () -> Unit,
     onPDFClick: () -> Unit,
 ) {
 
@@ -90,7 +90,7 @@ fun Activity.ToolBarUI(
                     imageVector = Icons.Rounded.ArrowBack,
                     tint = Color.White
                 ) {
-                    resetToList()
+                    backToList()
                 }
 
                 if (selectedMedia.value?.imageTransform?.value == true)
@@ -126,7 +126,7 @@ fun Activity.ToolBarUI(
                         mediaDelete.emit(
                             DeleteMediaVars(
                                 listUri = listOf(selectedMedia.value!!.uri),
-                                action = resetToList
+                                action = backToList
                             )
                         )
                     }

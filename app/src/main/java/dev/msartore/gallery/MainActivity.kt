@@ -57,6 +57,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.concurrent.ConcurrentLinkedQueue
 
+
 @SuppressLint("NewApi")
 @OptIn(ExperimentalAnimationApi::class, ExperimentalFoundationApi::class)
 class MainActivity : ComponentActivity() {
@@ -149,17 +150,32 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         val context = this
+        var customAction: (() -> Unit)? = null
+        val mediaIndex = mutableStateOf<Int?>(null)
+        val selectedMedia = mutableStateOf<MediaClass?>(null)
         val mediaDeleteFlow = MutableSharedFlow<DeleteMediaVars>()
         val loading = mutableStateOf(true)
+        var backToListAction = {}
         val getContent = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
             if (it.resultCode != RESULT_OK) {
                 finishAffinity()
             }
         }
+        val sIntent = intent
+        val action = sIntent.action
+        val type = sIntent.type
+        var uriIntent: Uri? = null
         val intentSettings = Intent(
             Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
             Uri.fromParts("package", packageName, null)
         )
+
+        if (Intent.ACTION_VIEW == action && type != null) {
+            val uri = sIntent.data
+            uri?.let {
+                uriIntent = it
+            }
+        }
 
         contentObserver = this.initContentResolver(contentResolver) {
             cor { updateList.emit(Unit) }
@@ -215,6 +231,19 @@ class MainActivity : ComponentActivity() {
 
                         delay(10)
 
+                        if (uriIntent != null) {
+
+                            mediaList.find { it.uri == uriIntent }?.let {
+                                selectedMedia.value = it
+                                mediaIndex.value = it.index
+                            }
+                            customAction = {
+                                finishAffinity()
+                            }
+
+                            uriIntent = null
+                        }
+
                         loading.value = false
                         updateNeeded = false
 
@@ -235,8 +264,6 @@ class MainActivity : ComponentActivity() {
             val toolbarVisible = remember { mutableStateOf(true) }
             val creditsDialogStatus = remember { mutableStateOf(false) }
             val infoDialogStatus = remember { mutableStateOf(false) }
-            val mediaIndex = remember { mutableStateOf<Int?>(null) }
-            val selectedMedia = remember { mutableStateOf<MediaClass?>(null) }
             val resetStatusBarColor = remember { mutableStateOf({}) }
 
             GalleryTheme(
@@ -300,8 +327,7 @@ class MainActivity : ComponentActivity() {
                                         ) {
 
                                             BackHandler(enabled = true){
-                                                mediaIndex.value = null
-                                                selectedMedia.value = null
+                                                backToListAction()
                                             }
 
                                             DisposableEffect(key1 = true) {
@@ -333,6 +359,24 @@ class MainActivity : ComponentActivity() {
                                                     }
                                                 ) {
 
+                                                    LaunchedEffect(key1 = mediaIndex.value) {
+                                                        if (selectedMedia.value?.duration != null)
+                                                            backToListAction = {
+                                                                exoPlayer?.playWhenReady = false
+                                                                exoPlayer?.stop()
+                                                                customAction?.invoke()
+                                                                mediaIndex.value = null
+                                                                selectedMedia.value = null
+                                                                toolbarVisible.value = true
+                                                            }
+                                                        else
+                                                            backToListAction = {
+                                                                customAction?.invoke()
+                                                                mediaIndex.value = null
+                                                                selectedMedia.value = null
+                                                            }
+                                                    }
+
                                                     if (selectedMedia.value != null) {
                                                         if (selectedMedia.value?.duration == null)
                                                             contentResolver.ImageViewerUI(selectedMedia.value!!) { status ->
@@ -350,13 +394,7 @@ class MainActivity : ComponentActivity() {
                                                             VideoViewerUI(
                                                                 exoPlayer = exoPlayer!!,
                                                                 selectedMedia.value!!.uri,
-                                                                onClose = {
-                                                                    exoPlayer?.playWhenReady = false
-                                                                    exoPlayer?.stop()
-                                                                    mediaIndex.value = null
-                                                                    selectedMedia.value = null
-                                                                    toolbarVisible.value = true
-                                                                },
+                                                                onClose = backToListAction,
                                                                 onControllerVisibilityChange = {
                                                                     toolbarVisible.value =
                                                                         when (it) {
@@ -406,10 +444,7 @@ class MainActivity : ComponentActivity() {
 
                                                 intentSaveLocation.launch(intentCreateDocument)
                                             },
-                                            resetToList = {
-                                                mediaIndex.value = null
-                                                selectedMedia.value = null
-                                            }
+                                            backToList = backToListAction
                                         )
 
                                         AnimatedVisibility(
