@@ -229,17 +229,21 @@ class MainActivity : ComponentActivity() {
 
                         delay(10)
 
-                        if (uriIntent != null) {
+                        uriIntent?.let { ui ->
 
-                            mediaList.find { it.uri == uriIntent }?.let {
-                                selectedMedia.value = it
-                                mediaIndex.value = it.index
-                            }
-                            customAction = {
-                                finishAffinity()
-                            }
+                            contentResolver.apply {
+                                mediaList.find { getPath(it.uri) == getPath(ui) }?.let {
+                                    selectedMedia.value = it
+                                    mediaIndex.value = it.index
+                                }
 
-                            uriIntent = null
+
+                                customAction = {
+                                    finishAffinity()
+                                }
+
+                                uriIntent = null
+                            }
                         }
 
                         loading.value = false

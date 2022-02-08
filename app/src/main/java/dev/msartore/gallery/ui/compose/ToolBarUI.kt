@@ -116,7 +116,7 @@ fun Activity.ToolBarUI(
                 }
 
                 Icon(
-                    imageVector = Icons.Rounded.Delete,
+                    id = R.drawable.twotone_delete_forever_24,
                     tint = Color.White
                 ) {
                     cor {
