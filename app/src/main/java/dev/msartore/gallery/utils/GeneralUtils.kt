@@ -113,8 +113,6 @@ fun transformMillsToFormattedTime(mills: Long): String {
     val seconds = (mills / 1000f).roundToInt()
     var formattedText = ""
 
-    Log.d("transformMillsToFormattedTime", "seconds: $seconds")
-
     if (seconds >= 3600) {
         formattedText += (seconds / 3600).toString().padStart(2, '0') + ":"
     }
