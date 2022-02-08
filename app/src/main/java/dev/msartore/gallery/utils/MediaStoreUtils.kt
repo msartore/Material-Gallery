@@ -47,6 +47,7 @@ fun ContentResolver.queryImageMediaStore(): List<MediaClass> {
         MediaStore.Images.Media.DISPLAY_NAME,
         MediaStore.Images.Media.SIZE,
         MediaStore.Images.Media.DATE_TAKEN,
+        MediaStore.Images.Media.DATE_MODIFIED,
     )
 
     val query = this.query(
@@ -63,21 +64,23 @@ fun ContentResolver.queryImageMediaStore(): List<MediaClass> {
         val nameColumn =
             cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DISPLAY_NAME)
         val sizeColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.SIZE)
-        val dateColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATE_TAKEN)
+        val dateTakenColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATE_TAKEN)
+        val dateModifiedColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATE_MODIFIED)
 
         while (cursor.moveToNext()) {
 
             val id = cursor.getLong(idColumn)
             val name = cursor.getString(nameColumn)
             val size = cursor.getInt(sizeColumn)
-            val date = cursor.getLong(dateColumn)
+            val dateTaken = cursor.getLong(dateTakenColumn)
+            val dateModified = cursor.getLong(dateModifiedColumn) * 1000
 
             val contentUri: Uri = ContentUris.withAppendedId(
                 MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
                 id
             )
 
-            imageList.add(MediaClass(contentUri, name, size, date))
+            imageList.add(MediaClass(contentUri, name, size,  if (dateTaken >= dateModified) dateTaken else dateModified))
         }
     }
 
@@ -104,7 +107,8 @@ fun ContentResolver.queryVideoMediaStore(): List<MediaClass> {
         MediaStore.Video.Media.DISPLAY_NAME,
         MediaStore.Video.Media.SIZE,
         MediaStore.Video.Media.DURATION,
-        MediaStore.Images.Media.DATE_TAKEN,
+        MediaStore.Video.Media.DATE_TAKEN,
+        MediaStore.Video.Media.DATE_MODIFIED,
     )
 
     val query = this.query(
@@ -122,7 +126,8 @@ fun ContentResolver.queryVideoMediaStore(): List<MediaClass> {
             cursor.getColumnIndexOrThrow(MediaStore.Video.Media.DISPLAY_NAME)
         val sizeColumn = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.SIZE)
         val durationColumn = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.DURATION)
-        val dateColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATE_TAKEN)
+        val dateTakenColumn = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.DATE_TAKEN)
+        val dateModifiedColumn = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.DATE_MODIFIED)
 
         while (cursor.moveToNext()) {
 
@@ -130,14 +135,15 @@ fun ContentResolver.queryVideoMediaStore(): List<MediaClass> {
             val name = cursor.getString(nameColumn)
             val size = cursor.getInt(sizeColumn)
             val duration = cursor.getLong(durationColumn)
-            val date = cursor.getLong(dateColumn)
+            val dateTaken = cursor.getLong(dateTakenColumn)
+            val dateModified = cursor.getLong(dateModifiedColumn) * 1000
 
             val contentUri: Uri = ContentUris.withAppendedId(
                 MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
                 id
             )
 
-            videoList.add(MediaClass(contentUri, name, size, date, duration))
+            videoList.add(MediaClass(contentUri, name, size, if (dateTaken >= dateModified) dateTaken else dateModified, transformMillsToFormattedTime(duration)))
         }
     }
 

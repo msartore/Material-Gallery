@@ -11,14 +11,16 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.BottomDrawerState
+import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Delete
-import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,7 +42,9 @@ import dev.msartore.gallery.utils.cor
 import dev.msartore.gallery.utils.shareImage
 import dev.msartore.gallery.utils.startActivitySafely
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun Activity.ToolBarUI(
     visible: Boolean,
@@ -49,12 +53,13 @@ fun Activity.ToolBarUI(
     selectedMedia: MutableState<MediaClass?>,
     checkBoxVisible: MutableState<Boolean>,
     creditsDialogStatus: MutableState<Boolean>,
-    infoDialogStatus: MutableState<Boolean>,
+    bottomDrawerState: BottomDrawerState,
     backgroundColor: Color,
     backToList: () -> Unit,
     onPDFClick: () -> Unit,
 ) {
 
+    val scope = rememberCoroutineScope()
     val intentCamera =
         if (checkCameraHardware(this))
             Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA)
@@ -110,14 +115,6 @@ fun Activity.ToolBarUI(
                     }
                 }
 
-                if (selectedMedia.value?.uri != null)
-                    Icon(
-                        imageVector = Icons.Rounded.Info,
-                        tint = Color.White
-                    ) {
-                        infoDialogStatus.value = true
-                    }
-
                 Icon(
                     imageVector = Icons.Rounded.Delete,
                     tint = Color.White
@@ -131,6 +128,16 @@ fun Activity.ToolBarUI(
                         )
                     }
                 }
+
+                if (selectedMedia.value?.uri != null)
+                    Icon(
+                        id = R.drawable.round_more_vert_24,
+                        tint = Color.White
+                    ) {
+                        scope.launch {
+                            bottomDrawerState.open()
+                        }
+                    }
             }
 
             when {

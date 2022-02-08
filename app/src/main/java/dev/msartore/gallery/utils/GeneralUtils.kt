@@ -9,6 +9,7 @@ import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.ui.geometry.Offset
 import androidx.lifecycle.Lifecycle
@@ -111,6 +112,8 @@ fun transformMillsToFormattedTime(mills: Long): String {
 
     val seconds = (mills / 1000f).roundToInt()
     var formattedText = ""
+
+    Log.d("transformMillsToFormattedTime", "seconds: $seconds")
 
     if (seconds >= 3600) {
         formattedText += (seconds / 3600).toString().padStart(2, '0') + ":"

@@ -36,7 +36,6 @@ import dev.msartore.gallery.models.MediaClass
 import dev.msartore.gallery.ui.compose.basic.CheckBox
 import dev.msartore.gallery.ui.compose.basic.Icon
 import dev.msartore.gallery.utils.loadImage
-import dev.msartore.gallery.utils.transformMillsToFormattedTime
 import dev.msartore.gallery.utils.vibrate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -167,7 +166,7 @@ fun Context.ImageUI(
                     ) {
                         Text(
                             modifier = Modifier.shadow(20.dp),
-                            text = transformMillsToFormattedTime(media.duration),
+                            text = media.duration,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
                             fontFamily = FontFamily.SansSerif,

@@ -10,7 +10,7 @@ open class MediaClass(
     val name: String,
     val size: Int,
     val date: Long,
-    val duration: Long? = null,
+    val duration: String? = null,
     val imageTransform: MutableState<Boolean> = mutableStateOf(false),
     var selected: MutableState<Boolean> = mutableStateOf(false),
     var actionReset: () -> Unit = {},
