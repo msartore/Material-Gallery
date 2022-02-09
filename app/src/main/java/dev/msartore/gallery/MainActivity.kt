@@ -27,7 +27,6 @@ import androidx.compose.material.rememberBottomDrawerState
 import androidx.compose.material3.*
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.runtime.*
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -38,10 +37,7 @@ import androidx.lifecycle.lifecycleScope
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import com.google.android.exoplayer2.ExoPlayer
 import dev.msartore.gallery.MainActivity.BasicInfo.isDarkTheme
-import dev.msartore.gallery.models.DeleteMediaVars
-import dev.msartore.gallery.models.LoadingStatus
-import dev.msartore.gallery.models.Media
-import dev.msartore.gallery.models.MediaClass
+import dev.msartore.gallery.models.*
 import dev.msartore.gallery.ui.compose.*
 import dev.msartore.gallery.ui.compose.basic.DialogContainer
 import dev.msartore.gallery.ui.theme.GalleryTheme
@@ -53,7 +49,6 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.concurrent.ConcurrentLinkedQueue
-
 
 @SuppressLint("NewApi")
 @OptIn(ExperimentalAnimationApi::class, ExperimentalFoundationApi::class,
@@ -72,7 +67,7 @@ class MainActivity : ComponentActivity() {
     private var contentObserver: Pair<ContentObserver, ContentObserver>? = null
     private val updateList = MutableSharedFlow<Unit>()
     private val checkBoxVisible = mutableStateOf(false)
-    private val mediaList = SnapshotStateList<MediaClass>()
+    private val mediaList = MediaList()
     private val dialogLoadingStatus = LoadingStatus()
     private val updateCLDCache = MutableSharedFlow<Media>()
     private val concurrentLinkedQueueCache = ConcurrentLinkedQueue<Media>()
@@ -80,7 +75,7 @@ class MainActivity : ComponentActivity() {
     private var intentSaveLocation =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { activityResult ->
             if (activityResult.resultCode == RESULT_OK) {
-                val selectedList = mediaList.filter { it.selected.value }.map { it.uri }
+                val selectedList = mediaList.list.filter { it.selected.value }.map { it.uri }
 
                 dialogLoadingStatus.count = selectedList.size
 
@@ -121,7 +116,7 @@ class MainActivity : ComponentActivity() {
                 updateNeeded = true
 
                 runCatching {
-                    mediaList.removeIf { it.uri == deletedImageUri }
+                    mediaList.list.removeIf { it.uri == deletedImageUri }
                 }.getOrElse {
                     it.printStackTrace()
                 }
@@ -152,7 +147,6 @@ class MainActivity : ComponentActivity() {
         val mediaIndex = mutableStateOf<Int?>(null)
         val selectedMedia = mutableStateOf<MediaClass?>(null)
         val mediaDeleteFlow = MutableSharedFlow<DeleteMediaVars>()
-        val loading = mutableStateOf(true)
         var backToListAction = {}
         val getContent = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
             if (it.resultCode != RESULT_OK) {
@@ -214,16 +208,16 @@ class MainActivity : ComponentActivity() {
 
                 if (!deleteInProgress)
                     cor {
-                        loading.value = true
+                        mediaList.busy.value = true
 
-                        mediaList.clear()
+                        mediaList.list.clear()
                         concurrentLinkedQueueCache.clear()
 
-                        mediaList.addAll(contentResolver.queryImageMediaStore())
-                        mediaList.addAll(contentResolver.queryVideoMediaStore())
-                        mediaList.sortByDescending { it.date }
+                        mediaList.list.addAll(contentResolver.queryImageMediaStore())
+                        mediaList.list.addAll(contentResolver.queryVideoMediaStore())
+                        mediaList.sort()
 
-                        mediaList.forEachIndexed { index, mediaClass ->
+                        mediaList.list.forEachIndexed { index, mediaClass ->
                             mediaClass.index = index
                         }
 
@@ -232,7 +226,7 @@ class MainActivity : ComponentActivity() {
                         uriIntent?.let { ui ->
 
                             contentResolver.apply {
-                                mediaList.find { getPath(it.uri) == getPath(ui) }?.let {
+                                mediaList.list.find { getPath(it.uri) == getPath(ui) }?.let {
                                     selectedMedia.value = it
                                     mediaIndex.value = it.index
                                 }
@@ -246,7 +240,7 @@ class MainActivity : ComponentActivity() {
                             }
                         }
 
-                        loading.value = false
+                        mediaList.busy.value = false
                         updateNeeded = false
 
                         if (deleteAction != null) {
@@ -280,6 +274,7 @@ class MainActivity : ComponentActivity() {
                     val scrollState = rememberLazyListState()
                     val systemUiController = rememberSystemUiController()
                     val gestureEnabled = remember { mutableStateOf(false) }
+                    val isMediaVisible = remember { mutableStateOf(false) }
 
                     Box(modifier = Modifier.fillMaxSize()) {
 
@@ -306,6 +301,8 @@ class MainActivity : ComponentActivity() {
                                         CustomBottomDrawer(
                                             gestureEnabled = gestureEnabled,
                                             contentResolver = contentResolver,
+                                            mediaList = mediaList,
+                                            isMediaVisible = isMediaVisible,
                                             mediaClass = selectedMedia.value,
                                             drawerState = bottomDrawerState,
                                         ) {
@@ -315,20 +312,21 @@ class MainActivity : ComponentActivity() {
                                             }
 
                                             AnimatedVisibility(
-                                                visible = mediaIndex.value == null && mediaList.isNotEmpty(),
+                                                visible = mediaIndex.value == null && mediaList.list.isNotEmpty(),
                                                 enter = expandVertically(),
                                                 exit = fadeOut()
                                             ) {
-                                                if (!loading.value)
+                                                if (!mediaList.busy.value)
                                                     MediaListUI(
                                                         concurrentLinkedQueue = concurrentLinkedQueueCache,
                                                         updateCLDCache = updateCLDCache,
                                                         lazyListState = scrollState,
-                                                        mediaList = mediaList,
+                                                        mediaList = mediaList.list,
                                                         checkBoxVisible = checkBoxVisible,
                                                     ) { mediaClass ->
+                                                        isMediaVisible.value = true
                                                         mediaIndex.value = mediaClass.index
-                                                        selectedMedia.value = mediaList.find { it.index == mediaIndex.value }
+                                                        selectedMedia.value = mediaList.list.find { it.index == mediaIndex.value }
                                                     }
                                             }
 
@@ -342,8 +340,6 @@ class MainActivity : ComponentActivity() {
                                                 }
 
                                                 DisposableEffect(key1 = true) {
-
-                                                    gestureEnabled.value = true
 
                                                     systemUiController.setSystemBarsColor(
                                                         color = Color.Black,
@@ -381,7 +377,7 @@ class MainActivity : ComponentActivity() {
                                                                     mediaIndex.value = null
                                                                     selectedMedia.value = null
                                                                     toolbarVisible.value = true
-                                                                    gestureEnabled.value = false
+                                                                    isMediaVisible.value = false
                                                                     scope.launch { bottomDrawerState.close() }
                                                                 }
                                                             else
@@ -389,7 +385,7 @@ class MainActivity : ComponentActivity() {
                                                                     customAction?.invoke()
                                                                     mediaIndex.value = null
                                                                     selectedMedia.value = null
-                                                                    gestureEnabled.value = false
+                                                                    isMediaVisible.value = false
                                                                     scope.launch { bottomDrawerState.close() }
                                                                 }
                                                         }
@@ -405,7 +401,7 @@ class MainActivity : ComponentActivity() {
                                                                         )
 
                                                                     if (selectedMedia.value?.index != mediaIndex.value)
-                                                                        selectedMedia.value = mediaList.find { it.index == mediaIndex.value }
+                                                                        selectedMedia.value = mediaList.list.find { it.index == mediaIndex.value }
                                                                 }
                                                             else
                                                                 VideoViewerUI(
@@ -428,7 +424,7 @@ class MainActivity : ComponentActivity() {
                                                                         )
 
                                                                     if (selectedMedia.value?.index != mediaIndex.value)
-                                                                        selectedMedia.value = mediaList.find { it.index == mediaIndex.value }
+                                                                        selectedMedia.value = mediaList.list.find { it.index == mediaIndex.value }
                                                                 }
                                                         }
                                                     }
@@ -436,7 +432,7 @@ class MainActivity : ComponentActivity() {
 
                                             ToolBarUI(
                                                 visible = (scrollState.firstVisibleItemScrollOffset == 0 || !scrollState.isScrollInProgress || checkBoxVisible.value) && toolbarVisible.value,
-                                                mediaList = mediaList,
+                                                mediaList = mediaList.list,
                                                 mediaDelete = mediaDeleteFlow,
                                                 selectedMedia = selectedMedia,
                                                 checkBoxVisible = checkBoxVisible,
@@ -465,7 +461,7 @@ class MainActivity : ComponentActivity() {
                                             )
 
                                             AnimatedVisibility(
-                                                visible = loading.value && selectedMedia.value == null,
+                                                visible = mediaList.busy.value && selectedMedia.value == null,
                                                 enter = scaleIn(),
                                                 exit = scaleOut()
                                             ) {
@@ -483,7 +479,7 @@ class MainActivity : ComponentActivity() {
                                             }
 
                                             AnimatedVisibility(
-                                                visible = mediaList.isEmpty() && !loading.value,
+                                                visible = mediaList.list.isEmpty() && !mediaList.busy.value,
                                                 enter = fadeIn(),
                                                 exit = fadeOut()
                                             ) {
@@ -504,7 +500,7 @@ class MainActivity : ComponentActivity() {
 
                                                     Button(
                                                         onClick = { cor { updateList.emit(Unit) } },
-                                                        enabled = !loading.value
+                                                        enabled = !mediaList.busy.value
                                                     ) {
                                                         Text(text = "Refresh")
                                                     }
@@ -569,7 +565,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun unselectAll() {
-        mediaList.forEach {
+        mediaList.list.forEach {
             it.selected.value = false
         }
         checkBoxVisible.value = false
@@ -581,12 +577,12 @@ class MainActivity : ComponentActivity() {
     ): Int {
 
         return if (status == ChangeMediaState.Forward)
-            if (index + 1 in 0 until mediaList.size)
+            if (index + 1 in 0 until mediaList.list.size)
                     index + 1
                 else
                     index
             else
-                if (index - 1 in 0 until mediaList.size)
+                if (index - 1 in 0 until mediaList.list.size)
                     index - 1
                 else
                     index

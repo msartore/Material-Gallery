@@ -129,15 +129,14 @@ fun Activity.ToolBarUI(
                     }
                 }
 
-                if (selectedMedia.value?.uri != null)
-                    Icon(
-                        id = R.drawable.round_more_vert_24,
-                        tint = Color.White
-                    ) {
-                        scope.launch {
-                            bottomDrawerState.open()
-                        }
+                Icon(
+                    id = R.drawable.round_more_vert_24,
+                    tint = Color.White
+                ) {
+                    scope.launch {
+                        bottomDrawerState.open()
                     }
+                }
             }
 
             when {
@@ -157,13 +156,26 @@ fun Activity.ToolBarUI(
                         fontFamily = FontFamily.SansSerif
                     )
 
-                    Icon(
-                        painter = painterResource(id = R.drawable.baseline_photo_camera_24),
-                        tint = if (isDarkTheme.value) Color.White else Color.Black,
-                        shadowEnabled = false
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        if (intentCamera != null) {
-                            startActivitySafely(intentCamera)
+                        Icon(
+                            painter = painterResource(id = R.drawable.baseline_photo_camera_24),
+                            shadowEnabled = false
+                        ) {
+                            if (intentCamera != null) {
+                                startActivitySafely(intentCamera)
+                            }
+                        }
+
+                        Icon(
+                            id = R.drawable.round_sort_24,
+                            shadowEnabled = false
+                        ) {
+                            scope.launch {
+                                bottomDrawerState.open()
+                            }
                         }
                     }
                 }

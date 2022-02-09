@@ -2,12 +2,15 @@ package dev.msartore.gallery.models
 
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import com.google.android.exoplayer2.ExoPlaybackException
 import com.google.android.exoplayer2.PlaybackParameters
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.Timeline
 import com.google.android.exoplayer2.source.TrackGroupArray
 import com.google.android.exoplayer2.trackselection.TrackSelectionArray
+import dev.msartore.gallery.utils.cor
+import kotlinx.coroutines.delay
 import java.util.*
 import kotlin.concurrent.fixedRateTimer
 
@@ -17,6 +20,66 @@ data class LoadingStatus(
     val text: MutableState<String> = mutableStateOf("0%"),
     val status: MutableState<Boolean> = mutableStateOf(false)
 )
+
+class MediaList(
+    val sort: MutableState<Sort> = mutableStateOf(Sort.DESC),
+    val sortType: MutableState<SortType> = mutableStateOf(SortType.DATE),
+) {
+
+    val list: SnapshotStateList<MediaClass> = SnapshotStateList()
+    val busy: MutableState<Boolean> = mutableStateOf(true)
+
+    fun sort() {
+
+        if (!busy.value) {
+
+            cor {
+                busy.value = true
+
+                when (sort.value) {
+                    Sort.DESC -> list.sortByDescending {
+                        when (sortType.value) {
+                            SortType.DATE -> it.date
+                            SortType.SIZE -> it.size.toLong()
+                        }
+                    }
+                    Sort.ASC -> list.sortBy {
+                        when (sortType.value) {
+                            SortType.DATE -> it.date
+                            SortType.SIZE -> it.size.toLong()
+                        }
+                    }
+                }
+
+                delay(10)
+
+                busy.value = false
+            }
+        }
+    }
+
+    fun changeSort(
+        sort: Sort = this.sort.value,
+        sortType: SortType = this.sortType.value
+    ) {
+
+        if (!busy.value) {
+            this.sort.value = sort
+            this.sortType.value = sortType
+            sort()
+        }
+    }
+
+    enum class Sort {
+        DESC,
+        ASC
+    }
+
+    enum class SortType {
+        DATE,
+        SIZE
+    }
+}
 
 class CustomTimer(
     var period: Long,
