@@ -1,6 +1,7 @@
 package dev.msartore.gallery.ui.compose
 
 import android.content.ContentResolver
+import android.content.Intent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -16,13 +17,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat.startActivity
 import androidx.exifinterface.media.ExifInterface
 import dev.msartore.gallery.R
 import dev.msartore.gallery.models.MediaClass
 import dev.msartore.gallery.models.MediaList
+import dev.msartore.gallery.ui.compose.basic.CardIcon
 import dev.msartore.gallery.ui.compose.basic.Icon
 import dev.msartore.gallery.ui.compose.basic.RadioButton
 import dev.msartore.gallery.ui.compose.basic.TextAuto
@@ -30,6 +34,7 @@ import dev.msartore.gallery.utils.getPath
 import kotlinx.coroutines.launch
 import java.text.DateFormat
 import java.text.DateFormat.getDateInstance
+
 
 @OptIn(ExperimentalMaterialApi::class, ExperimentalMaterialApi::class)
 @Composable
@@ -77,23 +82,25 @@ fun CustomBottomDrawer(
             ) {
 
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Spacer(
                         modifier = Modifier
-                            .height(5.dp)
-                            .width(60.dp)
+                            .height(4.dp)
+                            .width(25.dp)
                             .background(
-                                color = Color.DarkGray,
+                                color = MaterialTheme.colorScheme.onBackground,
                                 shape = RoundedCornerShape(16.dp)
                             )
                     )
                 }
 
                 if (isMediaVisible.value) {
-                    BottomDrawerMediaInfoUI(
+                    BottomDrawerMediaUI(
                         mediaClass = mediaClass,
                         contentResolver = contentResolver
                     )
@@ -115,7 +122,7 @@ fun BottomDrawerGeneralUI(mediaList: MediaList) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .height(300.dp)
+            .height(260.dp)
             .padding(16.dp)
             .border(
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.primaryContainer),
@@ -134,7 +141,7 @@ fun BottomDrawerGeneralUI(mediaList: MediaList) {
 
         RadioButton(
             text = "Date",
-            selected = radioButtonDate.value,
+            selected = radioButtonDate,
             onClick = {
                 radioButtonSize.value = false
                 radioButtonDate.value = true
@@ -148,7 +155,7 @@ fun BottomDrawerGeneralUI(mediaList: MediaList) {
 
         RadioButton(
             text = "Size",
-            selected = radioButtonSize.value,
+            selected = radioButtonSize,
             onClick = {
                 radioButtonDate.value = false
                 radioButtonSize.value = true
@@ -164,7 +171,7 @@ fun BottomDrawerGeneralUI(mediaList: MediaList) {
 
         RadioButton(
             text = "Ascending",
-            selected = radioButtonAsc.value,
+            selected = radioButtonAsc,
             onClick = {
                 radioButtonDesc.value = false
                 radioButtonAsc.value = true
@@ -178,7 +185,7 @@ fun BottomDrawerGeneralUI(mediaList: MediaList) {
 
         RadioButton(
             text = "Descending",
-            selected = radioButtonDesc.value,
+            selected = radioButtonDesc,
             onClick = {
                 radioButtonAsc.value = false
                 radioButtonDesc.value = true
@@ -193,15 +200,31 @@ fun BottomDrawerGeneralUI(mediaList: MediaList) {
 }
 
 @Composable
-fun BottomDrawerMediaInfoUI(
+fun BottomDrawerMediaUI(
     mediaClass: MediaClass?,
     contentResolver: ContentResolver,
 ) {
 
     val video = mediaClass?.duration != null
-
+    val context = LocalContext.current
 
     mediaClass?.uri?.let {
+
+        CardIcon(
+            id = R.drawable.round_launch_24,
+            text = "Use as"
+        ) {
+            val intent = Intent(Intent.ACTION_ATTACH_DATA)
+            intent.addCategory(Intent.CATEGORY_DEFAULT)
+            intent.setDataAndType(it, "image/jpeg")
+            intent.putExtra("mimeType", "image/jpeg")
+            startActivity(context, Intent.createChooser(intent, "Set as:"), null)
+        }
+
+        Divider()
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         contentResolver.getPath(it)?.let { path ->
 
             val exif = ExifInterface(path)
@@ -265,7 +288,7 @@ fun BottomDrawerMediaInfoUI(
 
                         Column(Modifier.weight(5f)) {
                             Row(
-                                horizontalArrangement = Arrangement.SpaceBetween,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
                             ) {
                                 TextAuto(
                                     text = exif.getAttribute(ExifInterface.TAG_MAKE) ?: "N/A",
@@ -279,7 +302,7 @@ fun BottomDrawerMediaInfoUI(
                             Spacer(modifier = Modifier.height(12.dp))
 
                             Row(
-                                horizontalArrangement = Arrangement.SpaceBetween,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
                             ) {
                                 TextAuto(
                                     text = "ƒ${exif.getAttribute(ExifInterface.TAG_F_NUMBER) ?: "N/A"}",
