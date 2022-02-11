@@ -1,3 +1,19 @@
+/**
+ * Copyright © 2022  Massimiliano Sartore
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see https://www.gnu.org/licenses/
+ */
+
 package dev.msartore.gallery.ui.compose
 
 import android.content.ContentResolver
@@ -18,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -35,14 +52,14 @@ import kotlinx.coroutines.launch
 import java.text.DateFormat
 import java.text.DateFormat.getDateInstance
 
-
 @OptIn(ExperimentalMaterialApi::class, ExperimentalMaterialApi::class)
 @Composable
 fun CustomBottomDrawer(
     contentResolver: ContentResolver,
     gestureEnabled: MutableState<Boolean>,
     mediaList: MediaList,
-    isMediaVisible: MutableState<Boolean>,
+    bottomDrawerValue: MutableState<BottomDrawer>,
+    isAboutSectionVisible: MutableState<Boolean>,
     mediaClass: MediaClass?,
     drawerState: BottomDrawerState,
     content: @Composable () -> Unit,
@@ -99,23 +116,40 @@ fun CustomBottomDrawer(
                     )
                 }
 
-                if (isMediaVisible.value) {
-                    BottomDrawerMediaUI(
+                when (bottomDrawerValue.value) {
+                    BottomDrawer.Media -> BottomDrawerMediaUI(
                         mediaClass = mediaClass,
                         contentResolver = contentResolver
                     )
-                } else {
-                    BottomDrawerGeneralUI(mediaList = mediaList)
+                    BottomDrawer.Sort -> BottomDrawerSortUI(
+                        mediaList = mediaList
+                    )
+                    BottomDrawer.General -> BottomDrawerGeneralUI(
+                        isAboutSectionVisible = isAboutSectionVisible
+                    )
                 }
             }
-
-
         }
     )
 }
 
 @Composable
-fun BottomDrawerGeneralUI(mediaList: MediaList) {
+fun BottomDrawerGeneralUI(
+    isAboutSectionVisible: MutableState<Boolean>,
+) {
+
+    CardIcon(
+        id = R.drawable.round_info_24,
+        text = stringResource(id = R.string.about)
+    ) {
+        isAboutSectionVisible.value = true
+    }
+}
+
+@Composable
+fun BottomDrawerSortUI(
+    mediaList: MediaList
+) {
 
     val scope = rememberCoroutineScope()
 
@@ -137,10 +171,10 @@ fun BottomDrawerGeneralUI(mediaList: MediaList) {
         val radioButtonAsc = remember { mutableStateOf(false) }
         val radioButtonDesc = remember { mutableStateOf(true) }
 
-        TextAuto("Sort by:", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+        TextAuto(stringResource(id = R.string.sort_by) + ":", fontSize = 15.sp, fontWeight = FontWeight.Bold)
 
         RadioButton(
-            text = "Date",
+            text = stringResource(id = R.string.date),
             selected = radioButtonDate,
             onClick = {
                 radioButtonSize.value = false
@@ -154,7 +188,7 @@ fun BottomDrawerGeneralUI(mediaList: MediaList) {
         )
 
         RadioButton(
-            text = "Size",
+            text = stringResource(id = R.string.size),
             selected = radioButtonSize,
             onClick = {
                 radioButtonDate.value = false
@@ -170,7 +204,7 @@ fun BottomDrawerGeneralUI(mediaList: MediaList) {
         Divider()
 
         RadioButton(
-            text = "Ascending",
+            text = stringResource(id = R.string.ascending),
             selected = radioButtonAsc,
             onClick = {
                 radioButtonDesc.value = false
@@ -184,7 +218,7 @@ fun BottomDrawerGeneralUI(mediaList: MediaList) {
         )
 
         RadioButton(
-            text = "Descending",
+            text = stringResource(id = R.string.descending),
             selected = radioButtonDesc,
             onClick = {
                 radioButtonAsc.value = false
@@ -212,13 +246,13 @@ fun BottomDrawerMediaUI(
 
         CardIcon(
             id = R.drawable.round_launch_24,
-            text = "Use as"
+            text = stringResource(id = R.string.use_as)
         ) {
             val intent = Intent(Intent.ACTION_ATTACH_DATA)
             intent.addCategory(Intent.CATEGORY_DEFAULT)
             intent.setDataAndType(it, "image/jpeg")
             intent.putExtra("mimeType", "image/jpeg")
-            startActivity(context, Intent.createChooser(intent, "Set as:"), null)
+            startActivity(context, Intent.createChooser(intent, context.getString(R.string.use_as)), null)
         }
 
         Divider()
@@ -239,7 +273,7 @@ fun BottomDrawerMediaUI(
             Spacer(modifier = Modifier.height(25.dp))
 
             TextAuto(
-                text = "Details",
+                id = R.string.details,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 18.sp,
             )
@@ -339,4 +373,10 @@ fun BottomDrawerMediaUI(
             }
         }
     }
+}
+
+enum class BottomDrawer {
+    Media,
+    Sort,
+    General,
 }

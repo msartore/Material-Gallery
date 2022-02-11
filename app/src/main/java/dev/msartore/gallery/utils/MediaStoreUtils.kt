@@ -1,3 +1,19 @@
+/**
+ * Copyright © 2022  Massimiliano Sartore
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see https://www.gnu.org/licenses/
+ */
+
 package dev.msartore.gallery.utils
 
 import android.app.Activity
@@ -26,6 +42,8 @@ import dev.msartore.gallery.models.MediaClass
 import dev.msartore.gallery.models.MediaInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.util.*
+import kotlin.collections.ArrayList
 
 fun ContentResolver.queryImageMediaStore(): List<MediaClass> {
 
@@ -80,7 +98,15 @@ fun ContentResolver.queryImageMediaStore(): List<MediaClass> {
                 id
             )
 
-            imageList.add(MediaClass(contentUri, name, size,  if (dateTaken >= dateModified) dateTaken else dateModified))
+            imageList.add(
+                MediaClass(
+                    uri = contentUri,
+                    name = name,
+                    size = size,
+                    date =  if (dateTaken >= dateModified) dateTaken else dateModified,
+                    uuid = UUID.randomUUID()
+                )
+            )
         }
     }
 
@@ -143,7 +169,16 @@ fun ContentResolver.queryVideoMediaStore(): List<MediaClass> {
                 id
             )
 
-            videoList.add(MediaClass(contentUri, name, size, if (dateTaken >= dateModified) dateTaken else dateModified, transformMillsToFormattedTime(duration)))
+            videoList.add(
+                MediaClass(
+                    uri = contentUri,
+                    name = name,
+                    size = size,
+                    date = if (dateTaken >= dateModified) dateTaken else dateModified,
+                    duration = transformMillsToFormattedTime(duration),
+                    uuid = UUID.randomUUID()
+                )
+            )
         }
     }
 

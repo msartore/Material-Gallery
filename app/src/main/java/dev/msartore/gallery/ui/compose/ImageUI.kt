@@ -1,3 +1,19 @@
+/**
+ * Copyright © 2022  Massimiliano Sartore
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see https://www.gnu.org/licenses/
+ */
+
 package dev.msartore.gallery.ui.compose
 
 import android.content.Context
@@ -35,6 +51,7 @@ import dev.msartore.gallery.models.Media
 import dev.msartore.gallery.models.MediaClass
 import dev.msartore.gallery.ui.compose.basic.CheckBox
 import dev.msartore.gallery.ui.compose.basic.Icon
+import dev.msartore.gallery.utils.cor
 import dev.msartore.gallery.utils.loadImage
 import dev.msartore.gallery.utils.vibrate
 import kotlinx.coroutines.Dispatchers
@@ -56,39 +73,45 @@ fun Context.ImageUI(
     val thumbnail = remember { mutableStateOf<ImageBitmap?>(null) }
     val errorState = remember { mutableStateOf(false) }
 
-    LaunchedEffect(key1 = true) {
-        runCatching {
-            withContext(Dispatchers.IO) {
+    DisposableEffect(key1 = true) {
+        val coroutineScope = cor {
+            runCatching {
+                withContext(Dispatchers.IO) {
 
-                val mediaTmp = concurrentLinkedQueue.find {
-                    it.index == media.index
-                }
+                    val mediaTmp = concurrentLinkedQueue.find {
+                        it.uuid == media.uuid
+                    }
 
-                if (mediaTmp == null) {
-                    if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
-                        thumbnail.value = applicationContext.contentResolver.loadThumbnail(
-                            media.uri, Size(10, 10), null
-                        ).asImageBitmap()
+                    if (mediaTmp == null) {
+                        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
+                            thumbnail.value = applicationContext.contentResolver.loadThumbnail(
+                                media.uri, Size(10, 10), null
+                            ).asImageBitmap()
 
-                        thumbnail.value = applicationContext.contentResolver.loadThumbnail(
-                            media.uri, Size(200, 200), null
-                        ).asImageBitmap()
+                            thumbnail.value = applicationContext.contentResolver.loadThumbnail(
+                                media.uri, Size(200, 200), null
+                            ).asImageBitmap()
+                        }
+                        else {
+                            thumbnail.value = contentResolver.loadImage(media, 100)
+
+                            thumbnail.value = contentResolver.loadImage(media, 7)
+                        }
+
+                        updateCLDCache.emit(Media(thumbnail.value, media.uuid))
                     }
                     else {
-                        thumbnail.value = contentResolver.loadImage(media, 100)
-
-                        thumbnail.value = contentResolver.loadImage(media, 7)
+                        thumbnail.value = mediaTmp.imageBitmap
                     }
-
-                    updateCLDCache.emit(Media(thumbnail.value, media.index))
                 }
-                else {
-                    thumbnail.value = mediaTmp.imageBitmap
-                }
+            }.getOrElse {
+                it.printStackTrace()
+                errorState.value = true
             }
-        }.getOrElse {
-            it.printStackTrace()
-            errorState.value = true
+        }
+
+        onDispose {
+            coroutineScope.cancel()
         }
     }
 
@@ -197,7 +220,8 @@ fun Context.ImageUI(
                 modifier = Modifier
                     .width(100.dp)
                     .height(100.dp),
-                id = R.drawable.baseline_broken_image_24
+                id = R.drawable.baseline_broken_image_24,
+                shadowEnabled = false
             )
         else
             Spacer(

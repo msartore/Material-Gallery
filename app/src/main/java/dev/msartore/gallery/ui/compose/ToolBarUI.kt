@@ -1,3 +1,19 @@
+/**
+ * Copyright © 2022  Massimiliano Sartore
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see https://www.gnu.org/licenses/
+ */
+
 package dev.msartore.gallery.ui.compose
 
 import android.app.Activity
@@ -8,7 +24,6 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.BottomDrawerState
@@ -24,7 +39,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
@@ -52,8 +66,8 @@ fun Activity.ToolBarUI(
     mediaDelete: MutableSharedFlow<DeleteMediaVars>,
     selectedMedia: MutableState<MediaClass?>,
     checkBoxVisible: MutableState<Boolean>,
-    creditsDialogStatus: MutableState<Boolean>,
     bottomDrawerState: BottomDrawerState,
+    bottomDrawerValue: MutableState<BottomDrawer>,
     backgroundColor: Color,
     backToList: () -> Unit,
     onPDFClick: () -> Unit,
@@ -134,6 +148,7 @@ fun Activity.ToolBarUI(
                     tint = Color.White
                 ) {
                     scope.launch {
+                        bottomDrawerValue.value = BottomDrawer.Media
                         bottomDrawerState.open()
                     }
                 }
@@ -143,10 +158,6 @@ fun Activity.ToolBarUI(
                 !checkBoxVisible.value && selectedMedia.value == null -> {
                     Text(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(16.dp))
-                            .clickable {
-                                creditsDialogStatus.value = true
-                            }
                             .padding(5.dp),
                         text = "Gallery",
                         fontSize = 20.sp,
@@ -174,6 +185,17 @@ fun Activity.ToolBarUI(
                             shadowEnabled = false
                         ) {
                             scope.launch {
+                                bottomDrawerValue.value = BottomDrawer.Sort
+                                bottomDrawerState.open()
+                            }
+                        }
+
+                        Icon(
+                            id = R.drawable.round_more_vert_24,
+                            shadowEnabled = false
+                        ) {
+                            scope.launch {
+                                bottomDrawerValue.value = BottomDrawer.General
                                 bottomDrawerState.open()
                             }
                         }

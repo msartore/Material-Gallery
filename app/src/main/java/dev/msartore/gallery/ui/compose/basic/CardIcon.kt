@@ -1,3 +1,19 @@
+/**
+ * Copyright © 2022  Massimiliano Sartore
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see https://www.gnu.org/licenses/
+ */
+
 package dev.msartore.gallery.ui.compose.basic
 
 import androidx.compose.foundation.clickable
@@ -22,12 +38,15 @@ fun CardIcon(
         modifier = Modifier
             .clip(RoundedCornerShape(8.dp))
             .size(70.dp)
-            .padding(8.dp)
-            .clickable { onClick() },
+            .clickable { onClick() }
+            .padding(8.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Icon(id = id)
+        Icon(
+            id = id,
+            shadowEnabled = false
+        )
         TextAuto(text = text)
     }
 }
