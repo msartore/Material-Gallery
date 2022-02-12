@@ -19,4 +19,13 @@
     <string name="third_party_licenses">Licenza di terzi</string>
     <string name="about">Informazioni</string>
     <string name="made_by_msartore">Creata da msartore</string>
+    <string name="permission_request">Richiesta permesso</string>
+    <string name="permission_request_text">Questa app deve accedere a foto e contenuti multimediali per funzionare. Si prega di concedere il permesso.</string>
+    <string name="permission_rejected">Permesso negato</string>
+    <string name="permission_rejected_text">Autorizzazione file e media negata. Per favore, concedici l\'accesso nella schermata Impostazioni.</string>
+    <string name="open_settings">Apri impostazioni</string>
+    <string name="confirm">Conferma</string>
+    <string name="cancel">Cancella</string>
+    <string name="contribute_to_the_project">Contribuisci al progetto</string>
+    <string name="donate_to_support_the_project">Dona per sostenere il progetto</string>
 </resources>

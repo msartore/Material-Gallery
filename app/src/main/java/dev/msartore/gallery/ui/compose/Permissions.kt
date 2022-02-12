@@ -22,9 +22,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.res.stringResource
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionRequired
 import com.google.accompanist.permissions.rememberPermissionState
+import dev.msartore.gallery.R
 import dev.msartore.gallery.ui.compose.basic.Dialog
 
 @OptIn(ExperimentalPermissionsApi::class)
@@ -53,8 +55,8 @@ fun FileAndMediaPermission(
                     val dialogStatus = remember { mutableStateOf(true) }
 
                     Dialog(
-                        title = "Permission request",
-                        text = "The File and Media is important for this app. Please grant the permission.",
+                        title = stringResource(R.string.permission_request),
+                        text = stringResource(R.string.permission_request_text),
                         closeOnClick = false,
                         status = dialogStatus,
                         onCancel = {
@@ -90,11 +92,10 @@ fun DialogPermissionRejected(
     val dialogStatus = remember { mutableStateOf(true) }
 
     Dialog(
-        title = "Permission not available",
-        text = "File and Media permission denied. See this FAQ with information about why we " +
-                "need this permission. Please, grant us access on the Settings screen.",
+        title = stringResource(id = R.string.permission_rejected),
+        text = stringResource(id = R.string.permission_rejected_text),
         status = dialogStatus,
-        confirmText = "Open settings",
+        confirmText = stringResource(id = R.string.open_settings),
         onCancel = onCancel,
         onConfirm = {
             navigateToSettingsScreen()

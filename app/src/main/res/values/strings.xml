@@ -28,4 +28,14 @@
     <string name="accompanist_title" translatable="false">Accompanist (permission, system ui controller and appcompact theme adapter)</string>
     <string name="accompanist_descriptionTitle" translatable="false">"Copyright 2020 The Android Open Source Project "</string>
     <string name="gallery_description" translatable="false">Copyright © 2022 Massimiliano Sartore\n\nThis program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.\n\nThis program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.\n\nYou should have received a copy of the GNU General Public License along with this program. If not, see https://www.gnu.org/licenses/</string>
+    <string name="permission_request">Permission request</string>
+    <string name="permission_request_text">This app has to access your Photo and Media to work. Please grant the permission.</string>
+    <string name="permission_rejected">Permission rejected</string>
+    <string name="permission_rejected_text">File and Media permission denied. Please, grant us access to the Settings screen.</string>
+    <string name="open_settings">Open settings</string>
+    <string name="confirm">Confirm</string>
+    <string name="cancel">Cancel</string>
+    <string name="gallery" translatable="false">Gallery</string>
+    <string name="contribute_to_the_project">Contribute to the project</string>
+    <string name="donate_to_support_the_project">Donate to support the project</string>
 </resources>

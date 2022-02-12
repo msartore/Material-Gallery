@@ -56,6 +56,7 @@ fun Activity.AboutUI(
     val context = LocalContext.current
     val manager = packageManager
     val info = manager.getPackageInfo(packageName, 0)
+    val intent = remember { Intent(Intent.ACTION_VIEW) }
 
     Column(
         modifier = Modifier
@@ -313,10 +314,13 @@ fun Activity.AboutUI(
                         .fillMaxWidth()
                         .clickable {
                             val url = "http://storyset.com/"
-                            val intent = Intent(Intent.ACTION_VIEW).apply {
-                                data = Uri.parse(url)
-                            }
-                            startActivity(context, intent, null)
+                            startActivity(
+                                context,
+                                intent.apply {
+                                    data = Uri.parse(url)
+                                },
+                                null
+                            )
                         },
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -336,11 +340,71 @@ fun Activity.AboutUI(
                         .clip(RoundedCornerShape(4.dp))
                         .fillMaxWidth()
                         .clickable {
+                            val url = "https://github.com/msartore/Material-Gallery"
+
+                            startActivity(
+                                context,
+                                intent.apply {
+                                    data = Uri.parse(url)
+                                },
+                                null
+                            )
+                        },
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp),
+                        shadowEnabled = false,
+                        id = R.drawable.round_handshake_24
+                    )
+                    TextAuto(
+                        id = R.string.contribute_to_the_project,
+                    )
+                }
+
+                Row(
+                    modifier = Modifier
+                        .padding(8.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .fillMaxWidth()
+                        .clickable {
+                            val url = "https://msartore.dev/donation/"
+
+                            startActivity(
+                                context,
+                                intent.apply {
+                                    data = Uri.parse(url)
+                                },
+                                null
+                            )
+                        },
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp),
+                        shadowEnabled = false,
+                        id = R.drawable.round_volunteer_activism_24
+                    )
+                    TextAuto(
+                        id = R.string.donate_to_support_the_project,
+                    )
+                }
+
+                Row(
+                    modifier = Modifier
+                        .padding(8.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .fillMaxWidth()
+                        .clickable {
                             val url = "http://msartore.dev"
-                            val intent = Intent(Intent.ACTION_VIEW).apply {
-                                data = Uri.parse(url)
-                            }
-                            startActivity(context, intent, null)
+
+                            startActivity(
+                                context,
+                                intent.apply {
+                                    data = Uri.parse(url)
+                                },
+                                null
+                            )
                         },
                     verticalAlignment = Alignment.CenterVertically,
                 ) {

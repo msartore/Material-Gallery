@@ -25,9 +25,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
+import dev.msartore.gallery.R
 
 @Composable
 fun Dialog(
@@ -36,8 +38,8 @@ fun Dialog(
     closeOnClick: Boolean = true,
     onConfirm: () -> Unit,
     onCancel: () -> Unit = {},
-    confirmText: String = "Confirm",
-    cancelText: String = "Cancel",
+    confirmText: String = stringResource(id = R.string.confirm),
+    cancelText: String = stringResource(id = R.string.cancel),
     dialogProperties: DialogProperties = DialogProperties(
         dismissOnBackPress = false,
         dismissOnClickOutside = false
