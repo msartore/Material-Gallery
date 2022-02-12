@@ -89,7 +89,8 @@ fun CustomBottomDrawer(
 
             Column(
                 modifier = Modifier
-                    .wrapContentSize()
+                    .fillMaxWidth()
+                    .wrapContentHeight()
                     .background(
                         color = MaterialTheme.colorScheme.background,
                         shape = RoundedCornerShape(topEnd = 16.dp, topStart = 16.dp)

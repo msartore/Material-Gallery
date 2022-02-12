@@ -24,6 +24,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 import dev.msartore.gallery.MainActivity.BasicInfo.isDarkTheme
@@ -46,6 +47,7 @@ fun TextAuto(
             textAlign = textAlign,
             lineHeight = 17.sp,
             fontSize = fontSize,
+            overflow = TextOverflow.Ellipsis,
             style = style
         )
     else
@@ -56,6 +58,7 @@ fun TextAuto(
             textAlign = textAlign,
             lineHeight = 17.sp,
             fontSize = fontSize,
+            overflow = TextOverflow.Ellipsis,
             style = style
         )
 }
