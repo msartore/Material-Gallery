@@ -18,6 +18,7 @@ package dev.msartore.gallery.ui.compose
 
 import android.content.ContentResolver
 import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -62,6 +63,7 @@ fun CustomBottomDrawer(
     isAboutSectionVisible: MutableState<Boolean>,
     mediaClass: MediaClass?,
     drawerState: BottomDrawerState,
+    onPDFClick: (Uri) -> Unit,
     content: @Composable () -> Unit,
 ) {
 
@@ -120,7 +122,8 @@ fun CustomBottomDrawer(
                 when (bottomDrawerValue.value) {
                     BottomDrawer.Media -> BottomDrawerMediaUI(
                         mediaClass = mediaClass,
-                        contentResolver = contentResolver
+                        contentResolver = contentResolver,
+                        onPDFClick = onPDFClick,
                     )
                     BottomDrawer.Sort -> BottomDrawerSortUI(
                         mediaList = mediaList
@@ -172,7 +175,7 @@ fun BottomDrawerSortUI(
         val radioButtonAsc = remember { mutableStateOf(false) }
         val radioButtonDesc = remember { mutableStateOf(true) }
 
-        TextAuto(stringResource(id = R.string.sort_by) + ":", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+        TextAuto(text = stringResource(id = R.string.sort_by) + ":", fontSize = 15.sp, fontWeight = FontWeight.Bold)
 
         RadioButton(
             text = stringResource(id = R.string.date),
@@ -238,6 +241,7 @@ fun BottomDrawerSortUI(
 fun BottomDrawerMediaUI(
     mediaClass: MediaClass?,
     contentResolver: ContentResolver,
+    onPDFClick: (Uri) -> Unit,
 ) {
 
     val video = mediaClass?.duration != null
@@ -245,15 +249,26 @@ fun BottomDrawerMediaUI(
 
     mediaClass?.uri?.let {
 
-        CardIcon(
-            id = R.drawable.round_launch_24,
-            text = stringResource(id = R.string.use_as)
-        ) {
-            val intent = Intent(Intent.ACTION_ATTACH_DATA)
-            intent.addCategory(Intent.CATEGORY_DEFAULT)
-            intent.setDataAndType(it, "image/jpeg")
-            intent.putExtra("mimeType", "image/jpeg")
-            startActivity(context, Intent.createChooser(intent, context.getString(R.string.use_as)), null)
+        Row {
+
+            CardIcon(
+                id = R.drawable.round_launch_24,
+                text = stringResource(id = R.string.use_as)
+            ) {
+                val intent = Intent(Intent.ACTION_ATTACH_DATA)
+                intent.addCategory(Intent.CATEGORY_DEFAULT)
+                intent.setDataAndType(it, "image/jpeg")
+                intent.putExtra("mimeType", "image/jpeg")
+                startActivity(context, Intent.createChooser(intent, context.getString(R.string.use_as)), null)
+            }
+
+            if (mediaClass.duration == null)
+                CardIcon(
+                    id = R.drawable.baseline_picture_as_pdf_24,
+                    text = stringResource(id = R.string.convert_to_pdf)
+                ) {
+                    onPDFClick(it)
+                }
         }
 
         Divider()

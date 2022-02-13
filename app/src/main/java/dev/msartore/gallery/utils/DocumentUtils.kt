@@ -17,11 +17,13 @@
 package dev.msartore.gallery.utils
 
 import android.content.ContentResolver
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.pdf.PdfDocument
 import android.net.Uri
+import dev.msartore.gallery.R
 import dev.msartore.gallery.models.LoadingStatus
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -29,6 +31,7 @@ import java.io.File
 
 fun documentGeneration(
     listImage: List<Uri>,
+    context: Context,
     path: String,
     contentResolver: ContentResolver,
     loadingStatus: LoadingStatus
@@ -62,11 +65,11 @@ fun documentGeneration(
         }
     }
 
-    loadingStatus.text.value = "Finishing document..."
+    loadingStatus.text.value = context.getString(R.string.finishing_document)
 
     document.writeTo(contentResolver.openOutputStream(Uri.parse(path)))
     document.close()
 
-    loadingStatus.text.value = "Done!"
+    loadingStatus.text.value = context.getString(R.string.done)
 }
 

@@ -19,6 +19,7 @@ package dev.msartore.gallery.ui.compose.basic
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -31,6 +32,7 @@ import dev.msartore.gallery.MainActivity.BasicInfo.isDarkTheme
 
 @Composable
 fun TextAuto(
+    modifier: Modifier = Modifier,
     text: String? = null,
     id: Int? = null,
     fontWeight: FontWeight? = null,
@@ -41,6 +43,7 @@ fun TextAuto(
 ) {
     if (id != null)
         Text(
+            modifier = modifier,
             text = stringResource(id = id),
             color = color,
             fontWeight = fontWeight,
@@ -52,6 +55,7 @@ fun TextAuto(
         )
     else
         Text(
+            modifier = modifier,
             text = text.toString(),
             color = color,
             fontWeight = fontWeight,

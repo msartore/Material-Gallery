@@ -28,4 +28,7 @@
     <string name="cancel">Cancella</string>
     <string name="contribute_to_the_project">Contribuisci al progetto</string>
     <string name="donate_to_support_the_project">Dona per sostenere il progetto</string>
+    <string name="convert_to_pdf">Converti in PDF</string>
+    <string name="finishing_document">Finalizzazione del documento…</string>
+    <string name="done">Fatto!</string>
 </resources>

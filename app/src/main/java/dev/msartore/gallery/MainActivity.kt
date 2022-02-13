@@ -50,6 +50,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import com.google.android.exoplayer2.ExoPlayer
@@ -102,6 +103,7 @@ class MainActivity : ComponentActivity() {
                     withContext(Dispatchers.IO) {
                         activityResult.data?.data?.toString()?.let { path ->
                             documentGeneration(
+                                context = this@MainActivity,
                                 listImage = selectedList,
                                 path = path,
                                 contentResolver = contentResolver,
@@ -178,6 +180,14 @@ class MainActivity : ComponentActivity() {
             Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
             Uri.fromParts("package", packageName, null)
         )
+        val onPDFClick = {
+            val intentCreateDocument = Intent(Intent.ACTION_CREATE_DOCUMENT)
+
+            intentCreateDocument.addCategory(Intent.CATEGORY_OPENABLE)
+            intentCreateDocument.type = "application/pdf"
+            intentCreateDocument.putExtra(Intent.EXTRA_TITLE, "Material Gallery ${getDate()}.pdf")
+            intentSaveLocation.launch(intentCreateDocument)
+        }
 
         if (Intent.ACTION_VIEW == action && type != null) {
             val uri = sIntent.data
@@ -351,7 +361,16 @@ class MainActivity : ComponentActivity() {
                                                 bottomDrawerValue = bottomDrawerValue,
                                                 isAboutSectionVisible = isAboutSectionVisible,
                                                 mediaClass = selectedMedia.value,
-                                                drawerState = bottomDrawerState
+                                                drawerState = bottomDrawerState,
+                                                onPDFClick = { uri ->
+
+                                                    mediaList.list.forEach {
+                                                        if (it.uri == uri)
+                                                            it.selected.value = true
+                                                    }
+
+                                                    onPDFClick()
+                                                }
                                             ) {
 
                                                 AnimatedVisibility(
@@ -484,16 +503,7 @@ class MainActivity : ComponentActivity() {
                                                         }
                                                     }
                                                     else Color.Transparent,
-                                                    onPDFClick = {
-
-                                                        val intentCreateDocument = Intent(Intent.ACTION_CREATE_DOCUMENT)
-
-                                                        intentCreateDocument.addCategory(Intent.CATEGORY_OPENABLE)
-                                                        intentCreateDocument.type = "application/pdf"
-                                                        intentCreateDocument.putExtra(Intent.EXTRA_TITLE, "Material Gallery ${getDate()}.pdf")
-
-                                                        intentSaveLocation.launch(intentCreateDocument)
-                                                    },
+                                                    onPDFClick = onPDFClick,
                                                     backToList = backToListAction
                                                 )
 
@@ -561,7 +571,8 @@ class MainActivity : ComponentActivity() {
                                                     ) {
                                                         TextAuto(
                                                             id = R.string.please_wait,
-                                                            style = MaterialTheme.typography.headlineSmall
+                                                            style = MaterialTheme.typography.headlineSmall,
+                                                            fontSize = 18.sp
                                                         )
 
                                                         Row(
@@ -577,7 +588,7 @@ class MainActivity : ComponentActivity() {
                                                                 color = colorScheme.primary
                                                             )
 
-                                                            Text(
+                                                            TextAuto(
                                                                 modifier = Modifier.fillMaxWidth(),
                                                                 text = dialogLoadingStatus.text.value,
                                                                 textAlign = TextAlign.Center,
