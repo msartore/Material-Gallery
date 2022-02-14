@@ -107,6 +107,7 @@ fun Activity.ToolBarUI(
             if (selectedMedia.value != null) {
                 Icon(
                     imageVector = Icons.Rounded.ArrowBack,
+                    tint = Color.White
                 ) {
                     backToList()
                 }
@@ -121,6 +122,7 @@ fun Activity.ToolBarUI(
 
                 Icon(
                     id = R.drawable.baseline_share_24,
+                    tint = Color.White
                 ) {
                     selectedMedia.value?.uri?.let {
                         shareImage(arrayListOf(it))
@@ -129,6 +131,7 @@ fun Activity.ToolBarUI(
 
                 Icon(
                     id = R.drawable.twotone_delete_forever_24,
+                    tint = Color.White
                 ) {
                     cor {
                         mediaDelete.emit(
@@ -142,6 +145,7 @@ fun Activity.ToolBarUI(
 
                 Icon(
                     id = R.drawable.round_more_vert_24,
+                    tint = Color.White
                 ) {
                     scope.launch {
                         bottomDrawerValue.value = BottomDrawer.Media

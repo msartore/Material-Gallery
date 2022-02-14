@@ -50,7 +50,7 @@ import dev.msartore.gallery.models.MediaClass
 import dev.msartore.gallery.ui.compose.basic.CheckBox
 import dev.msartore.gallery.ui.compose.basic.Icon
 import dev.msartore.gallery.utils.cor
-import dev.msartore.gallery.utils.loadImage
+import dev.msartore.gallery.utils.loadThumbnail
 import dev.msartore.gallery.utils.vibrate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -72,9 +72,9 @@ fun Context.ImageUI(
         val coroutineScope = cor {
             runCatching {
                 withContext(Dispatchers.IO) {
-                    thumbnail.value = loadImage(context, media, 7)
+                    thumbnail.value = loadThumbnail(context, media, 7)
 
-                    thumbnail.value = loadImage(context, media, 100)
+                    thumbnail.value = loadThumbnail(context, media, 100)
                 }
             }.getOrElse {
                 it.stackTraceToString()

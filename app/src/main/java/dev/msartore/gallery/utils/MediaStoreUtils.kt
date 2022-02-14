@@ -326,7 +326,7 @@ fun Activity.shareImage(imageUriArray: ArrayList<Uri>) {
     startActivity(Intent.createChooser(intent, "Share Via"))
 }
 
-fun loadImage(context: Context, media: MediaClass, multiplier: Int) =
+fun loadThumbnail(context: Context, media: MediaClass, multiplier: Int) =
     Glide.with(context).asBitmap().load(media.uri).submit(multiplier * 2, multiplier * 2).get().asImageBitmap()
 
 private class Resizer(private val size: Size, private val signal: CancellationSignal?) :

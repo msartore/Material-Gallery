@@ -16,6 +16,8 @@
 
 package dev.msartore.gallery.utils
 
+import android.Manifest
+import android.app.Activity
 import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
@@ -28,6 +30,8 @@ import android.os.Vibrator
 import android.os.VibratorManager
 import android.widget.Toast
 import androidx.compose.ui.geometry.Offset
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.google.accompanist.systemuicontroller.SystemUiController
@@ -36,6 +40,7 @@ import java.text.DateFormat
 import java.util.*
 import kotlin.math.abs
 import kotlin.math.roundToInt
+
 
 fun checkCameraHardware(context: Context) =
     context.packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)
@@ -63,6 +68,25 @@ fun checkIfNewTransitionIsNearest(
 
     return newDifferenceY < differenceY && newDifferenceX <= differenceX || newDifferenceX < differenceX && newDifferenceY <= differenceY
 }
+
+fun Context.checkPermission(activity: Activity): Boolean {
+
+    return if (ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.READ_EXTERNAL_STORAGE
+        )
+        != PackageManager.PERMISSION_GRANTED
+    ) {
+        ActivityCompat.requestPermissions(
+            activity, arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE),
+            650
+        )
+        false
+    } else {
+        true
+    }
+}
+
 
 fun Context.vibrate(
     amplitude: Int = 255,

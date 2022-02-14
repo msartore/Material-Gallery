@@ -16,9 +16,13 @@
 
 package dev.msartore.gallery.ui.compose
 
+import android.Manifest
 import android.content.ContentResolver
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
+import android.provider.MediaStore
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -34,12 +38,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.startActivity
+import androidx.core.content.PermissionChecker.PERMISSION_GRANTED
 import androidx.exifinterface.media.ExifInterface
 import dev.msartore.gallery.R
 import dev.msartore.gallery.models.MediaClass
@@ -53,9 +58,11 @@ import kotlinx.coroutines.launch
 import java.text.DateFormat
 import java.text.DateFormat.getDateInstance
 
+
 @OptIn(ExperimentalMaterialApi::class, ExperimentalMaterialApi::class)
 @Composable
 fun CustomBottomDrawer(
+    context: Context,
     contentResolver: ContentResolver,
     gestureEnabled: MutableState<Boolean>,
     mediaList: MediaList,
@@ -121,6 +128,7 @@ fun CustomBottomDrawer(
 
                 when (bottomDrawerValue.value) {
                     BottomDrawer.Media -> BottomDrawerMediaUI(
+                        context = context,
                         mediaClass = mediaClass,
                         contentResolver = contentResolver,
                         onPDFClick = onPDFClick,
@@ -239,13 +247,13 @@ fun BottomDrawerSortUI(
 
 @Composable
 fun BottomDrawerMediaUI(
+    context: Context,
     mediaClass: MediaClass?,
     contentResolver: ContentResolver,
     onPDFClick: (Uri) -> Unit,
 ) {
 
     val video = mediaClass?.duration != null
-    val context = LocalContext.current
 
     mediaClass?.uri?.let {
 
@@ -276,8 +284,6 @@ fun BottomDrawerMediaUI(
         Spacer(modifier = Modifier.height(16.dp))
 
         contentResolver.getPath(it)?.let { path ->
-
-            val exif = ExifInterface(path)
 
             TextAuto(
                 text = getDateInstance().format(mediaClass.date) + " " + DateFormat.getTimeInstance()
@@ -321,69 +327,85 @@ fun BottomDrawerMediaUI(
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_MEDIA_LOCATION) == PERMISSION_GRANTED) {
 
-            if (!video) {
-                if (exif.getAttribute(ExifInterface.TAG_EXPOSURE_TIME) != null) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(
-                            modifier = Modifier
-                                .weight(1f)
-                                .size(32.dp),
-                            id = R.drawable.round_camera_24
-                        )
+                val exif: ExifInterface? =
+                    if (Build.VERSION.SDK_INT == Build.VERSION_CODES.Q) {
+                        val uri = MediaStore.setRequireOriginal(it)
+                        val stream = contentResolver.openInputStream(uri)
+                        val ex = stream?.let { it1 -> ExifInterface(it1) }
 
-                        Column(Modifier.weight(5f)) {
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            ) {
-                                TextAuto(
-                                    text = exif.getAttribute(ExifInterface.TAG_MAKE) ?: "N/A",
-                                )
+                        stream?.close()
 
-                                TextAuto(
-                                    text = exif.getAttribute(ExifInterface.TAG_MODEL) ?: "N/A",
-                                )
-                            }
+                        ex
+                    }
+                    else
+                        ExifInterface(path)
 
-                            Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            ) {
-                                TextAuto(
-                                    text = "ƒ${exif.getAttribute(ExifInterface.TAG_F_NUMBER) ?: "N/A"}",
-                                )
-                                TextAuto(
-                                    text = "${exif.getAttribute(ExifInterface.TAG_FOCAL_LENGTH) ?: "N/A"}mm",
-                                )
-                                TextAuto(
-                                    text = "ISO${exif.getAttribute(ExifInterface.TAG_PHOTOGRAPHIC_SENSITIVITY) ?: "N/A"}",
-                                )
+                if (!video) {
+                    if (exif?.getAttribute(ExifInterface.TAG_EXPOSURE_TIME) != null) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .size(32.dp),
+                                id = R.drawable.round_camera_24
+                            )
+
+                            Column(Modifier.weight(5f)) {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                ) {
+                                    TextAuto(
+                                        text = exif.getAttribute(ExifInterface.TAG_MAKE) ?: "N/A",
+                                    )
+
+                                    TextAuto(
+                                        text = exif.getAttribute(ExifInterface.TAG_MODEL) ?: "N/A",
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                ) {
+                                    TextAuto(
+                                        text = "ƒ${exif.getAttribute(ExifInterface.TAG_F_NUMBER) ?: "N/A"}",
+                                    )
+                                    TextAuto(
+                                        text = "${exif.getAttribute(ExifInterface.TAG_FOCAL_LENGTH) ?: "N/A"}mm",
+                                    )
+                                    TextAuto(
+                                        text = "ISO${exif.getAttribute(ExifInterface.TAG_PHOTOGRAPHIC_SENSITIVITY) ?: "N/A"}",
+                                    )
+                                }
                             }
                         }
                     }
-                }
 
-                if (exif.getAttribute(ExifInterface.TAG_GPS_LATITUDE) != null) {
+                    if (exif?.getAttribute(ExifInterface.TAG_GPS_LATITUDE) != null) {
 
-                    Row(
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        TextAuto(
-                            text = exif.getAttribute(ExifInterface.TAG_GPS_LATITUDE) ?: "N/A",
-                        )
+                        Row(
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            TextAuto(
+                                text = exif.getAttribute(ExifInterface.TAG_GPS_LATITUDE) ?: "N/A",
+                            )
 
-                        TextAuto(
-                            text = exif.getAttribute(ExifInterface.TAG_GPS_LONGITUDE) ?: "N/A",
-                        )
+                            TextAuto(
+                                text = exif.getAttribute(ExifInterface.TAG_GPS_LONGITUDE) ?: "N/A",
+                            )
 
-                        TextAuto(
-                            text = exif.getAttribute(ExifInterface.TAG_GPS_ALTITUDE) ?: "N/A",
-                        )
+                            TextAuto(
+                                text = exif.getAttribute(ExifInterface.TAG_GPS_ALTITUDE) ?: "N/A",
+                            )
+                        }
                     }
                 }
             }

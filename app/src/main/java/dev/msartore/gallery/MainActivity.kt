@@ -337,6 +337,7 @@ class MainActivity : ComponentActivity() {
                                             exit = slideOutHorizontally { -it },
                                         ) {
                                             CustomBottomDrawer(
+                                                context = context,
                                                 contentResolver = contentResolver,
                                                 gestureEnabled = gestureEnabled,
                                                 mediaList = mediaList,
@@ -430,6 +431,7 @@ class MainActivity : ComponentActivity() {
                                                             if (selectedMedia.value != null) {
                                                                 if (selectedMedia.value?.duration == null)
                                                                     contentResolver.ImageViewerUI(
+                                                                        context = context,
                                                                         image = selectedMedia.value!!,
                                                                         onControllerVisibilityChanged = {
                                                                             toolbarVisible.value = !toolbarVisible.value

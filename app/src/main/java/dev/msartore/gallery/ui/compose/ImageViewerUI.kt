@@ -17,6 +17,7 @@
 package dev.msartore.gallery.ui.compose
 
 import android.content.ContentResolver
+import android.content.Context
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
@@ -38,9 +39,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.core.graphics.drawable.toBitmap
 import com.bumptech.glide.Glide
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import dev.msartore.gallery.models.MediaClass
@@ -53,12 +52,12 @@ import kotlinx.coroutines.withContext
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun ContentResolver.ImageViewerUI(
+    context: Context,
     image: MediaClass,
     onControllerVisibilityChanged: () -> Boolean,
     changeMedia: (ChangeMediaState) -> Unit,
 ) {
 
-    val context = LocalContext.current
     val thumbnail = remember { mutableStateOf<ImageBitmap?>(null) }
     val scale = remember { mutableStateOf(1f) }
     val translate = remember { mutableStateOf(Offset(0f, 0f)) }
@@ -72,11 +71,10 @@ fun ContentResolver.ImageViewerUI(
             thumbnail.value =
                 Glide
                     .with(context)
+                    .asBitmap()
                     .load(image.uri)
-                    .thumbnail(0.1f)
                     .submit()
                     .get()
-                    .toBitmap()
                     .asImageBitmap()
         }
 
@@ -141,7 +139,7 @@ fun ContentResolver.ImageViewerUI(
                             image.imageTransform.value = true
                         }
                         else {
-                            
+
                             slideMemory.add(centroid.x)
 
                             if (slideMemory.size == 5) {
