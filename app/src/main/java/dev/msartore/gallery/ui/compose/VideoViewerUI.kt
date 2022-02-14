@@ -62,7 +62,7 @@ fun VideoViewerUI(
     exoPlayer: ExoPlayer,
     uri: Uri,
     onClose: () -> Unit,
-    onControllerVisibilityChange: (VideoControllerVisibility) -> Unit,
+    onControllerVisibilityChanged: () -> Boolean,
     onChangeMedia: (ChangeMediaState) -> Unit
 ) {
     val lifecycle = LocalLifecycleOwner.current.lifecycle
@@ -175,13 +175,7 @@ fun VideoViewerUI(
                 detectTapGestures(
                     onTap = {
 
-                        if (visibility.value) {
-                            systemUiController.changeBarsStatus(false)
-                            onControllerVisibilityChange.invoke(VideoControllerVisibility.GONE)
-                        } else {
-                            systemUiController.changeBarsStatus(true)
-                            onControllerVisibilityChange.invoke(VideoControllerVisibility.VISIBLE)
-                        }
+                        systemUiController.changeBarsStatus(onControllerVisibilityChanged())
 
                         visibility.value = !visibility.value
                     }
@@ -340,11 +334,6 @@ fun VideoViewerUI(
             }
         }
     }
-}
-
-enum class VideoControllerVisibility(val value: Int) {
-    GONE(0),
-    VISIBLE(8),
 }
 
 enum class VideoStatus {

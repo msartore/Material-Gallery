@@ -66,7 +66,6 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.util.concurrent.ConcurrentLinkedQueue
 
 @SuppressLint("NewApi")
 @OptIn(ExperimentalAnimationApi::class, ExperimentalFoundationApi::class,
@@ -87,8 +86,6 @@ class MainActivity : ComponentActivity() {
     private val checkBoxVisible = mutableStateOf(false)
     private val mediaList = MediaList()
     private val dialogLoadingStatus = LoadingStatus()
-    private val updateCLDCache = MutableSharedFlow<Media>()
-    private val concurrentLinkedQueueCache = ConcurrentLinkedQueue<Media>()
     private var exoPlayer: ExoPlayer? = null
     private var intentSaveLocation =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { activityResult ->
@@ -201,20 +198,6 @@ class MainActivity : ComponentActivity() {
         }
 
         cor {
-            updateCLDCache.collect { media ->
-
-                if (concurrentLinkedQueueCache.any { it.uuid == media.uuid })
-                    return@collect
-
-                if (concurrentLinkedQueueCache.size > 300) {
-                    concurrentLinkedQueueCache.poll()
-                }
-
-                concurrentLinkedQueueCache.add(media)
-            }
-        }
-
-        cor {
             mediaDeleteFlow.collect { deleteMediaVars ->
                 deleteInProgress = true
                 checkBoxVisible.value = false
@@ -238,7 +221,6 @@ class MainActivity : ComponentActivity() {
                         mediaList.busy.value = true
 
                         mediaList.list.clear()
-                        concurrentLinkedQueueCache.clear()
 
                         mediaList.list.addAll(contentResolver.queryImageMediaStore())
                         mediaList.list.addAll(contentResolver.queryVideoMediaStore())
@@ -380,8 +362,6 @@ class MainActivity : ComponentActivity() {
                                                 ) {
                                                     if (!mediaList.busy.value)
                                                         MediaListUI(
-                                                            concurrentLinkedQueue = concurrentLinkedQueueCache,
-                                                            updateCLDCache = updateCLDCache,
                                                             lazyGridState = lazyGridState,
                                                             mediaList = mediaList.list,
                                                             checkBoxVisible = checkBoxVisible,
@@ -442,13 +422,21 @@ class MainActivity : ComponentActivity() {
                                                                         customAction?.invoke()
                                                                         mediaIndex.value = null
                                                                         selectedMedia.value = null
+                                                                        toolbarVisible.value = true
                                                                         scope.launch { bottomDrawerState.close() }
                                                                     }
                                                             }
 
                                                             if (selectedMedia.value != null) {
                                                                 if (selectedMedia.value?.duration == null)
-                                                                    contentResolver.ImageViewerUI(selectedMedia.value!!) { status ->
+                                                                    contentResolver.ImageViewerUI(
+                                                                        image = selectedMedia.value!!,
+                                                                        onControllerVisibilityChanged = {
+                                                                            toolbarVisible.value = !toolbarVisible.value
+
+                                                                            toolbarVisible.value
+                                                                        }
+                                                                    ) { status ->
 
                                                                         mediaIndex.value =
                                                                             calculatePossibleIndex(
@@ -464,12 +452,10 @@ class MainActivity : ComponentActivity() {
                                                                         exoPlayer = exoPlayer!!,
                                                                         selectedMedia.value!!.uri,
                                                                         onClose = backToListAction,
-                                                                        onControllerVisibilityChange = {
-                                                                            toolbarVisible.value =
-                                                                                when (it) {
-                                                                                    VideoControllerVisibility.VISIBLE -> true
-                                                                                    else -> false
-                                                                                }
+                                                                        onControllerVisibilityChanged = {
+                                                                            toolbarVisible.value = !toolbarVisible.value
+
+                                                                            toolbarVisible.value
                                                                         }
                                                                     ) { status ->
 

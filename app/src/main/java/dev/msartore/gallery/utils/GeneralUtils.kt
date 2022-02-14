@@ -19,6 +19,7 @@ package dev.msartore.gallery.utils
 import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.database.Cursor
 import android.net.Uri
 import android.os.Build
@@ -35,6 +36,9 @@ import java.text.DateFormat
 import java.util.*
 import kotlin.math.abs
 import kotlin.math.roundToInt
+
+fun checkCameraHardware(context: Context) =
+    context.packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)
 
 fun Context.startActivitySafely(intent: Intent) {
     runCatching {

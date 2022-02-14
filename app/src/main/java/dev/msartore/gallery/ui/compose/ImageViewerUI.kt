@@ -42,7 +42,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import com.bumptech.glide.Glide
+import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import dev.msartore.gallery.models.MediaClass
+import dev.msartore.gallery.utils.changeBarsStatus
 import dev.msartore.gallery.utils.checkIfNewTransitionIsNearest
 import dev.msartore.gallery.utils.getImageSize
 import kotlinx.coroutines.Dispatchers
@@ -52,6 +54,7 @@ import kotlinx.coroutines.withContext
 @Composable
 fun ContentResolver.ImageViewerUI(
     image: MediaClass,
+    onControllerVisibilityChanged: () -> Boolean,
     changeMedia: (ChangeMediaState) -> Unit,
 ) {
 
@@ -61,6 +64,7 @@ fun ContentResolver.ImageViewerUI(
     val translate = remember { mutableStateOf(Offset(0f, 0f)) }
     val rotation = remember { mutableStateOf(0f) }
     val imageSize = remember { getImageSize(image = image.uri)}
+    val systemUiController = rememberSystemUiController()
     val slideMemory = remember { mutableStateListOf<Float>() }
 
     LaunchedEffect(key1 = true) {
@@ -90,6 +94,9 @@ fun ContentResolver.ImageViewerUI(
             .fillMaxSize()
             .pointerInput(Unit) {
                 detectTapGestures(
+                    onTap = {
+                        systemUiController.changeBarsStatus(onControllerVisibilityChanged())
+                    },
                     onDoubleTap = {
                         if (rotation.value != 0f || scale.value != 1f) {
                             image.actionReset()
@@ -134,25 +141,26 @@ fun ContentResolver.ImageViewerUI(
                             image.imageTransform.value = true
                         }
                         else {
-
+                            
                             slideMemory.add(centroid.x)
 
-                            if (slideMemory.size == 2) {
+                            if (slideMemory.size == 5) {
 
                                 when {
-                                    slideMemory[0] < slideMemory[1] -> {
+                                    slideMemory[0] < slideMemory[4] -> {
                                         changeMedia(ChangeMediaState.Backward)
                                     }
-                                    slideMemory[0] > slideMemory[1] -> {
+                                    slideMemory[0] > slideMemory[4] -> {
                                         changeMedia(ChangeMediaState.Forward)
                                     }
                                 }
                             }
 
-                            if (slideMemory.size > 3) {
+                            if (slideMemory.size > 10) {
                                 slideMemory.clear()
                             }
                         }
+
                     }
                 }
             }

@@ -35,7 +35,6 @@
     <string name="open_settings">Open settings</string>
     <string name="confirm">Confirm</string>
     <string name="cancel">Cancel</string>
-    <string name="gallery" translatable="false">Gallery</string>
     <string name="contribute_to_the_project">Contribute to the project</string>
     <string name="donate_to_support_the_project">Donate to support the project</string>
     <string name="convert_to_pdf">Convert to PDF</string>

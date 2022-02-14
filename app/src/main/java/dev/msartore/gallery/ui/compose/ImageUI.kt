@@ -18,7 +18,6 @@ package dev.msartore.gallery.ui.compose
 
 import android.content.Context
 import android.os.Build
-import android.util.Size
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.*
 import androidx.compose.animation.core.keyframes
@@ -38,16 +37,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.msartore.gallery.R
-import dev.msartore.gallery.models.Media
 import dev.msartore.gallery.models.MediaClass
 import dev.msartore.gallery.ui.compose.basic.CheckBox
 import dev.msartore.gallery.ui.compose.basic.Icon
@@ -55,16 +53,12 @@ import dev.msartore.gallery.utils.cor
 import dev.msartore.gallery.utils.loadImage
 import dev.msartore.gallery.utils.vibrate
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.withContext
-import java.util.concurrent.ConcurrentLinkedQueue
 
 @OptIn(ExperimentalAnimationApi::class)
 @RequiresApi(Build.VERSION_CODES.Q)
 @Composable
 fun Context.ImageUI(
-    concurrentLinkedQueue: ConcurrentLinkedQueue<Media>,
-    updateCLDCache: MutableSharedFlow<Media>,
     media: MediaClass,
     mediaList: SnapshotStateList<MediaClass>,
     checkBoxVisible: MutableState<Boolean>,
@@ -72,40 +66,18 @@ fun Context.ImageUI(
 ) {
     val thumbnail = remember { mutableStateOf<ImageBitmap?>(null) }
     val errorState = remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     DisposableEffect(key1 = true) {
         val coroutineScope = cor {
             runCatching {
                 withContext(Dispatchers.IO) {
+                    thumbnail.value = loadImage(context, media, 7)
 
-                    val mediaTmp = concurrentLinkedQueue.find {
-                        it.uuid == media.uuid
-                    }
-
-                    if (mediaTmp == null) {
-                        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
-                            thumbnail.value = applicationContext.contentResolver.loadThumbnail(
-                                media.uri, Size(10, 10), null
-                            ).asImageBitmap()
-
-                            thumbnail.value = applicationContext.contentResolver.loadThumbnail(
-                                media.uri, Size(200, 200), null
-                            ).asImageBitmap()
-                        }
-                        else {
-                            thumbnail.value = contentResolver.loadImage(media, 100)
-
-                            thumbnail.value = contentResolver.loadImage(media, 7)
-                        }
-
-                        updateCLDCache.emit(Media(thumbnail.value, media.uuid))
-                    }
-                    else {
-                        thumbnail.value = mediaTmp.imageBitmap
-                    }
+                    thumbnail.value = loadImage(context, media, 100)
                 }
             }.getOrElse {
-                it.printStackTrace()
+                it.stackTraceToString()
                 errorState.value = true
             }
         }
@@ -228,6 +200,7 @@ fun Context.ImageUI(
                 modifier = Modifier
                     .width(100.dp)
                     .height(100.dp)
+                    .background(MaterialTheme.colorScheme.onBackground)
             )
     }
 }

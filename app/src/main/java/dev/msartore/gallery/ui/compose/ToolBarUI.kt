@@ -31,7 +31,6 @@ import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
@@ -108,7 +107,6 @@ fun Activity.ToolBarUI(
             if (selectedMedia.value != null) {
                 Icon(
                     imageVector = Icons.Rounded.ArrowBack,
-                    tint = Color.White
                 ) {
                     backToList()
                 }
@@ -123,7 +121,6 @@ fun Activity.ToolBarUI(
 
                 Icon(
                     id = R.drawable.baseline_share_24,
-                    tint = Color.White
                 ) {
                     selectedMedia.value?.uri?.let {
                         shareImage(arrayListOf(it))
@@ -132,7 +129,6 @@ fun Activity.ToolBarUI(
 
                 Icon(
                     id = R.drawable.twotone_delete_forever_24,
-                    tint = Color.White
                 ) {
                     cor {
                         mediaDelete.emit(
@@ -146,7 +142,6 @@ fun Activity.ToolBarUI(
 
                 Icon(
                     id = R.drawable.round_more_vert_24,
-                    tint = Color.White
                 ) {
                     scope.launch {
                         bottomDrawerValue.value = BottomDrawer.Media
@@ -160,7 +155,7 @@ fun Activity.ToolBarUI(
                     Text(
                         modifier = Modifier
                             .padding(5.dp),
-                        text = stringResource(id = R.string.gallery),
+                        text = stringResource(id = R.string.app_name),
                         fontSize = 20.sp,
                         textAlign = TextAlign.Center,
                         color = if (isDarkTheme.value) Color.White else Color.Black,
@@ -242,7 +237,7 @@ fun Activity.ToolBarUI(
                     }
 
                     Icon(
-                        imageVector = Icons.Rounded.Delete
+                        id = R.drawable.twotone_delete_forever_24,
                     ) {
                         val selectedImageList = mediaList.filter { it.selected.value }
 

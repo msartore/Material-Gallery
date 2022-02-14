@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Gallery</string>
+    <string name="app_name">Galleria</string>
     <string name="no_media_found">Nessun media trovato!</string>
     <string name="refresh">Aggiorna</string>
     <string name="please_wait">Attendere prego…</string>
