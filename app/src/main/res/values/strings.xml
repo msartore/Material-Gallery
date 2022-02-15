@@ -15,7 +15,7 @@
     <string name="illustrations_credit">Illustrations by Storyset</string>
     <string name="made_by_msartore">Made by msartore</string>
     <string name="about">About</string>
-    <string name="third_party_licenses">Third party license</string>
+    <string name="third_party_licenses">Third party licenses</string>
     <string name="more_about_me">More about me</string>
     <string name="license">License</string>
     <string name="glide_title" translatable="false">Glide (image loading and caching)</string>
@@ -29,7 +29,7 @@
     <string name="accompanist_descriptionTitle" translatable="false">"Copyright 2020 The Android Open Source Project "</string>
     <string name="gallery_description" translatable="false">Copyright © 2022 Massimiliano Sartore\n\nThis program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.\n\nThis program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.\n\nYou should have received a copy of the GNU General Public License along with this program. If not, see https://www.gnu.org/licenses/</string>
     <string name="permission_request">Permission request</string>
-    <string name="permission_request_text">This app has to access your Photo and Media to work. Please grant the permission.</string>
+    <string name="permission_request_text">This app must have access to your Photos and Media to work. Please grant the permission.</string>
     <string name="permission_rejected">Permission rejected</string>
     <string name="permission_rejected_text">File and Media permission denied. Please, grant us access to the Settings screen.</string>
     <string name="open_settings">Open settings</string>
