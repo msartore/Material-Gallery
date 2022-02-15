@@ -13,10 +13,9 @@ Material Gallery is a project that aims to be up to date to latest [Material gui
 </a>
 
 <div style="display:flex;">
-<img alt="App image" src="resources/screen4.svg" width="25%">
-<img alt="App image" src="resources/screen3.svg" width="25%">
-<img alt="App image" src="resources/screen2.svg" width="25%">
-<img alt="App image" src="resources/screen1.svg" width="25%">
+<img alt="App image" src="resources/screen4.svg" width="30%">
+<img alt="App image" src="resources/screen3.svg" width="30%">
+<img alt="App image" src="resources/screen2.svg" width="30%">
 </div>
 
 ## 🌟 Features
