@@ -142,19 +142,19 @@ fun ContentResolver.ImageViewerUI(
 
                             slideMemory.add(centroid.x)
 
-                            if (slideMemory.size == 5) {
+                            if (slideMemory.size == 2) {
 
                                 when {
-                                    slideMemory[0] < slideMemory[4] -> {
+                                    slideMemory[0] < slideMemory[1] -> {
                                         changeMedia(ChangeMediaState.Backward)
                                     }
-                                    slideMemory[0] > slideMemory[4] -> {
+                                    slideMemory[0] > slideMemory[1] -> {
                                         changeMedia(ChangeMediaState.Forward)
                                     }
                                 }
                             }
 
-                            if (slideMemory.size > 10) {
+                            if (slideMemory.size > 3) {
                                 slideMemory.clear()
                             }
                         }
