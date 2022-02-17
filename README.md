@@ -30,12 +30,10 @@ MATERIAL GALLERY FEATURES:
 
 - Convert Images to PDF
 
-- Share Your Photos
-    - Photo share simply and easily
-    - View images, then share your photos with contacts
+- Share Your Media
+    - Media share simply and easily
 
 - Manage File Formats
-    - Simple Gallery supports many different file types
-    - Share photos of all types, you have full flexibility in your choice of format
+    - Material Gallery supports many different file types
     - JPEG, PNG, MP4, MKV, RAW, SVG, GIF and more
     - Photo & video files are supported
