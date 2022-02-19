@@ -210,6 +210,7 @@ fun Activity.ToolBarUI(
                     }
 
                     Icon(
+                        shadowEnabled = false,
                         imageVector = Icons.Rounded.Close
                     ) {
                         mediaList.forEach {
@@ -220,12 +221,14 @@ fun Activity.ToolBarUI(
 
                     if (!mediaList.any { it.selected.value && it.duration != null })
                         Icon(
+                            shadowEnabled = false,
                             id = R.drawable.baseline_picture_as_pdf_24
                         ) {
                             onPDFClick()
                         }
 
                     Icon(
+                        shadowEnabled = false,
                         painter = painterResource(id = R.drawable.baseline_share_24)
                     ) {
                         val selectedImageList = mediaList.filter { it.selected.value }
@@ -241,6 +244,7 @@ fun Activity.ToolBarUI(
                     }
 
                     Icon(
+                        shadowEnabled = false,
                         id = R.drawable.twotone_delete_forever_24,
                     ) {
                         val selectedImageList = mediaList.filter { it.selected.value }

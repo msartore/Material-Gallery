@@ -454,11 +454,7 @@ class MainActivity : ComponentActivity() {
                                                                         exoPlayer = exoPlayer!!,
                                                                         selectedMedia.value!!.uri,
                                                                         onClose = backToListAction,
-                                                                        onControllerVisibilityChanged = {
-                                                                            toolbarVisible.value = !toolbarVisible.value
-
-                                                                            toolbarVisible.value
-                                                                        }
+                                                                        isToolbarVisible = toolbarVisible
                                                                     ) { status ->
 
                                                                         mediaIndex.value =

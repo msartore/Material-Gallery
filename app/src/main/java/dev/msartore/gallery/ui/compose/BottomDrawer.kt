@@ -257,31 +257,31 @@ fun BottomDrawerMediaUI(
 
     mediaClass?.uri?.let {
 
-        Row {
+        if (mediaClass.duration == null) {
+            Row {
+                CardIcon(
+                    id = R.drawable.round_launch_24,
+                    text = stringResource(id = R.string.use_as)
+                ) {
+                    val intent = Intent(Intent.ACTION_ATTACH_DATA)
+                    intent.addCategory(Intent.CATEGORY_DEFAULT)
+                    intent.setDataAndType(it, "image/jpeg")
+                    intent.putExtra("mimeType", "image/jpeg")
+                    startActivity(context, Intent.createChooser(intent, context.getString(R.string.use_as)), null)
+                }
 
-            CardIcon(
-                id = R.drawable.round_launch_24,
-                text = stringResource(id = R.string.use_as)
-            ) {
-                val intent = Intent(Intent.ACTION_ATTACH_DATA)
-                intent.addCategory(Intent.CATEGORY_DEFAULT)
-                intent.setDataAndType(it, "image/jpeg")
-                intent.putExtra("mimeType", "image/jpeg")
-                startActivity(context, Intent.createChooser(intent, context.getString(R.string.use_as)), null)
-            }
-
-            if (mediaClass.duration == null)
                 CardIcon(
                     id = R.drawable.baseline_picture_as_pdf_24,
                     text = stringResource(id = R.string.convert_to_pdf)
                 ) {
                     onPDFClick(it)
                 }
+            }
+
+            Divider()
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
-
-        Divider()
-
-        Spacer(modifier = Modifier.height(16.dp))
 
         contentResolver.getPath(it)?.let { path ->
 

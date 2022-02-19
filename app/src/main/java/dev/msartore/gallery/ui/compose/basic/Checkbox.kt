@@ -36,6 +36,7 @@ fun CheckBox(
             .padding(4.dp)
             .background(color = if (checked.value) MaterialTheme.colorScheme.background else Color.Transparent, shape = CircleShape),
         id = if (checked.value) R.drawable.baseline_check_circle_24 else R.drawable.baseline_unchecked_circle_24,
+        shadowEnabled = false,
         tint = if (checked.value) MaterialTheme.colorScheme.primary else Color.LightGray,
     )
 }

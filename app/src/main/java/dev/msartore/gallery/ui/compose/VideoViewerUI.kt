@@ -62,12 +62,11 @@ fun VideoViewerUI(
     exoPlayer: ExoPlayer,
     uri: Uri,
     onClose: () -> Unit,
-    onControllerVisibilityChanged: () -> Boolean,
+    isToolbarVisible: MutableState<Boolean>,
     onChangeMedia: (ChangeMediaState) -> Unit
 ) {
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val systemUiController = rememberSystemUiController()
-    val visibility = remember { mutableStateOf(true) }
     val isLoading = remember { mutableStateOf(true) }
 
     val videoStatus = remember { mutableStateOf(VideoStatus.STOPPED) }
@@ -89,7 +88,7 @@ fun VideoViewerUI(
 
     val timer = remember {
         CustomTimer(
-            period = 250
+            period = 50
         ) {
             cor {
                 withContext(Dispatchers.Main) {
@@ -174,10 +173,8 @@ fun VideoViewerUI(
             .pointerInput(Unit) {
                 detectTapGestures(
                     onTap = {
-
-                        systemUiController.changeBarsStatus(onControllerVisibilityChanged())
-
-                        visibility.value = !visibility.value
+                        isToolbarVisible.value = !isToolbarVisible.value
+                        systemUiController.changeBarsStatus(isToolbarVisible.value)
                     }
                 )
             }
@@ -235,7 +232,7 @@ fun VideoViewerUI(
     }
 
     AnimatedVisibility(
-        visible = visibility.value && !isLoading.value,
+        visible = isToolbarVisible.value && !isLoading.value,
         enter = slideInVertically(
             initialOffsetY = {it},
             animationSpec = tween(durationMillis = 600)
