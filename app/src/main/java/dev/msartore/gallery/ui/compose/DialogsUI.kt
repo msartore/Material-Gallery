@@ -51,7 +51,7 @@ fun Activity.DialogPrintUI(
                 .fillMaxWidth()
                 .wrapContentHeight()
                 .background(
-                    color = MaterialTheme.colorScheme.onSecondary,
+                    color = MaterialTheme.colorScheme.background,
                     shape = RoundedCornerShape(16.dp)
                 )
                 .padding(16.dp),
@@ -138,7 +138,7 @@ fun DialogLoadingUI(
                 .fillMaxWidth()
                 .wrapContentHeight()
                 .background(
-                    color = MaterialTheme.colorScheme.onSecondary,
+                    color = MaterialTheme.colorScheme.background,
                     shape = RoundedCornerShape(16.dp)
                 )
                 .padding(16.dp),

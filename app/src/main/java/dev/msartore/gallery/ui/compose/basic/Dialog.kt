@@ -57,7 +57,7 @@ fun Dialog(
                 modifier = Modifier
                     .wrapContentSize()
                     .background(
-                        color = MaterialTheme.colorScheme.onSecondary,
+                        color = MaterialTheme.colorScheme.background,
                         shape = RoundedCornerShape(16.dp)
                     )
                     .padding(16.dp),
