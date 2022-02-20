@@ -46,6 +46,8 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.startActivity
 import androidx.core.content.PermissionChecker.PERMISSION_GRANTED
 import androidx.exifinterface.media.ExifInterface
+import com.google.accompanist.systemuicontroller.rememberSystemUiController
+import dev.msartore.gallery.MainActivity.BasicInfo.isDarkTheme
 import dev.msartore.gallery.R
 import dev.msartore.gallery.models.MediaClass
 import dev.msartore.gallery.models.MediaList
@@ -71,10 +73,20 @@ fun CustomBottomDrawer(
     mediaClass: MediaClass?,
     drawerState: BottomDrawerState,
     onPDFClick: (Uri) -> Unit,
+    onImagePrintClick: () -> Unit,
     content: @Composable () -> Unit,
 ) {
+    val systemUiController = rememberSystemUiController()
+    val colorBackground = MaterialTheme.colorScheme.background
 
     DisposableEffect(key1 = drawerState.currentValue) {
+
+        if (bottomDrawerValue.value != BottomDrawer.General && drawerState.currentValue != BottomDrawerValue.Closed) {
+            systemUiController.setSystemBarsColor(
+                color = colorBackground,
+                darkIcons = !isDarkTheme.value
+            )
+        }
 
         gestureEnabled.value = when (drawerState.currentValue) {
             BottomDrawerValue.Closed -> false
@@ -83,6 +95,12 @@ fun CustomBottomDrawer(
         }
 
         onDispose {
+            if (bottomDrawerValue.value != BottomDrawer.General) {
+                systemUiController.setSystemBarsColor(
+                    color = Color.Black,
+                    darkIcons = false
+                )
+            }
             gestureEnabled.value = false
         }
     }
@@ -132,6 +150,7 @@ fun CustomBottomDrawer(
                         mediaClass = mediaClass,
                         contentResolver = contentResolver,
                         onPDFClick = onPDFClick,
+                        onImagePrintClick = onImagePrintClick,
                     )
                     BottomDrawer.Sort -> BottomDrawerSortUI(
                         mediaList = mediaList
@@ -251,6 +270,7 @@ fun BottomDrawerMediaUI(
     mediaClass: MediaClass?,
     contentResolver: ContentResolver,
     onPDFClick: (Uri) -> Unit,
+    onImagePrintClick: () -> Unit,
 ) {
 
     val video = mediaClass?.duration != null
@@ -275,6 +295,13 @@ fun BottomDrawerMediaUI(
                     text = stringResource(id = R.string.convert_to_pdf)
                 ) {
                     onPDFClick(it)
+                }
+
+                CardIcon(
+                    id = R.drawable.baseline_print_24,
+                    text = stringResource(id = R.string.print_photo)
+                ) {
+                    onImagePrintClick()
                 }
             }
 

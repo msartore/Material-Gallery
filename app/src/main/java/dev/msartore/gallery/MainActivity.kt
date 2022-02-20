@@ -32,32 +32,32 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.rememberLazyGridState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.BottomDrawerValue
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.rememberBottomDrawerState
-import androidx.compose.material3.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import com.google.android.exoplayer2.ExoPlayer
 import dev.msartore.gallery.MainActivity.BasicInfo.isDarkTheme
-import dev.msartore.gallery.models.*
+import dev.msartore.gallery.models.DeleteMediaVars
+import dev.msartore.gallery.models.LoadingStatus
+import dev.msartore.gallery.models.MediaClass
+import dev.msartore.gallery.models.MediaList
 import dev.msartore.gallery.ui.compose.*
-import dev.msartore.gallery.ui.compose.basic.DialogContainer
 import dev.msartore.gallery.ui.compose.basic.TextAuto
 import dev.msartore.gallery.ui.theme.GalleryTheme
 import dev.msartore.gallery.utils.*
@@ -268,6 +268,7 @@ class MainActivity : ComponentActivity() {
             val systemUiController = rememberSystemUiController()
             val gestureEnabled = remember { mutableStateOf(false) }
             val bottomDrawerValue = remember { mutableStateOf(BottomDrawer.Sort)}
+            val dialogPrint = remember { mutableStateOf(false) }
 
             GalleryTheme(
                 changeStatusBarColor = resetStatusBarColor,
@@ -353,6 +354,9 @@ class MainActivity : ComponentActivity() {
                                                     }
 
                                                     onPDFClick()
+                                                },
+                                                onImagePrintClick = {
+                                                    dialogPrint.value = true
                                                 }
                                             ) {
 
@@ -538,48 +542,15 @@ class MainActivity : ComponentActivity() {
                                                     }
                                                 }
 
-                                                DialogContainer(
-                                                    status = dialogLoadingStatus.status
-                                                ) {
-                                                    Column(
-                                                        modifier = Modifier
-                                                            .fillMaxWidth()
-                                                            .height(160.dp)
-                                                            .background(
-                                                                color = colorScheme.onSecondary,
-                                                                shape = RoundedCornerShape(16.dp)
-                                                            )
-                                                            .padding(25.dp),
-                                                        verticalArrangement = Arrangement.SpaceBetween,
-                                                        horizontalAlignment = Alignment.Start
-                                                    ) {
-                                                        TextAuto(
-                                                            id = R.string.please_wait,
-                                                            style = MaterialTheme.typography.headlineSmall,
-                                                            fontSize = 18.sp
-                                                        )
+                                                DialogPrintUI(
+                                                    status = dialogPrint,
+                                                    uri = selectedMedia.value?.uri,
+                                                )
 
-                                                        Row(
-                                                            modifier = Modifier
-                                                                .fillMaxWidth()
-                                                                .wrapContentHeight(),
-                                                            verticalAlignment = Alignment.CenterVertically,
-                                                            horizontalArrangement = Arrangement.Center
-                                                        ) {
-                                                            CircularProgressIndicator(
-                                                                modifier = Modifier
-                                                                    .size(45.dp),
-                                                                color = colorScheme.primary
-                                                            )
-
-                                                            TextAuto(
-                                                                modifier = Modifier.fillMaxWidth(),
-                                                                text = dialogLoadingStatus.text.value,
-                                                                textAlign = TextAlign.Center,
-                                                            )
-                                                        }
-                                                    }
-                                                }
+                                                DialogLoadingUI(
+                                                    status = dialogLoadingStatus.status,
+                                                    text = dialogLoadingStatus.text
+                                                )
                                             }
                                         }
                                     }

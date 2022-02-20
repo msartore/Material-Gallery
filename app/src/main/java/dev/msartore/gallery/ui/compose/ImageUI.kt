@@ -123,13 +123,11 @@ fun Context.ImageUI(
                             SizeTransform { initialSize, targetSize ->
                                 if (targetState) {
                                     keyframes {
-                                        // Expand horizontally first.
                                         IntSize(targetSize.width, initialSize.height) at 150
                                         durationMillis = 300
                                     }
                                 } else {
                                     keyframes {
-                                        // Shrink vertically first.
                                         IntSize(initialSize.width, targetSize.height) at 150
                                         durationMillis = 300
                                     }

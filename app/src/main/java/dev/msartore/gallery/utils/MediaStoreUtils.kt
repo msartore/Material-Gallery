@@ -25,12 +25,8 @@ import android.content.Intent
 import android.database.ContentObserver
 import android.database.Cursor
 import android.graphics.BitmapFactory
-import android.graphics.ImageDecoder
-import android.graphics.ImageDecoder.ImageInfo
-import android.graphics.ImageDecoder.OnHeaderDecodedListener
 import android.net.Uri
 import android.os.Build
-import android.os.CancellationSignal
 import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
@@ -329,27 +325,3 @@ fun Activity.shareImage(imageUriArray: ArrayList<Uri>) {
 fun loadThumbnail(context: Context, media: MediaClass, multiplier: Int) =
     Glide.with(context).asBitmap().load(media.uri).submit(multiplier * 2, multiplier * 2).get().asImageBitmap()
 
-private class Resizer(private val size: Size, private val signal: CancellationSignal?) :
-    OnHeaderDecodedListener {
-    override fun onHeaderDecoded(
-        decoder: ImageDecoder,
-        info: ImageInfo,
-        source: ImageDecoder.Source
-    ) {
-        // One last-ditch check to see if we've been canceled.
-        signal?.throwIfCanceled()
-
-        // We don't know how clients will use the decoded data, so we have
-        // to default to the more flexible "software" option.
-        decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
-
-        // We requested a rough thumbnail size, but the remote size may have
-        // returned something giant, so defensively scale down as needed.
-        val widthSample = info.size.width / size.width
-        val heightSample = info.size.height / size.height
-        val sample = widthSample.coerceAtLeast(heightSample)
-        if (sample > 1) {
-            decoder.setTargetSampleSize(sample)
-        }
-    }
-}

@@ -37,7 +37,7 @@ fun TextAuto(
     id: Int? = null,
     fontWeight: FontWeight? = null,
     textAlign: TextAlign = TextAlign.Start,
-    fontSize: TextUnit = 13.sp,
+    fontSize: TextUnit = 14.sp,
     color: Color = if (isDarkTheme.value) Color.White else Color.Black,
     style: TextStyle = LocalTextStyle.current
 ) {

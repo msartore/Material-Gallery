@@ -40,4 +40,9 @@
     <string name="convert_to_pdf">Convert to PDF</string>
     <string name="finishing_document">Finishing document…</string>
     <string name="done">Done!</string>
+    <string name="print_photo">Print photo</string>
+    <string name="fill_content">Fit to printable area</string>
+    <string name="fit_content">Fit to paper</string>
+    <string name="print">Print</string>
+    <string name="scale">Scale</string>
 </resources>

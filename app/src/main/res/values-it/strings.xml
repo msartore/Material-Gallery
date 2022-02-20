@@ -31,4 +31,9 @@
     <string name="convert_to_pdf">Converti in PDF</string>
     <string name="finishing_document">Completamento del documento…</string>
     <string name="done">Fatto!</string>
+    <string name="print">Stampa</string>
+    <string name="fit_content">Adatta al foglio</string>
+    <string name="fill_content">Adatta all\'area stampabile</string>
+    <string name="print_photo">Stampa foto</string>
+    <string name="scale">Scala</string>
 </resources>

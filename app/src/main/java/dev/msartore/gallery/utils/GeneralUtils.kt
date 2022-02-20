@@ -23,6 +23,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.database.Cursor
+import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Build
 import android.os.VibrationEffect
@@ -34,6 +35,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.print.PrintHelper
 import com.google.accompanist.systemuicontroller.SystemUiController
 import com.google.android.exoplayer2.ExoPlayer
 import java.text.DateFormat
@@ -86,7 +88,6 @@ fun Context.checkPermission(activity: Activity): Boolean {
         true
     }
 }
-
 
 fun Context.vibrate(
     amplitude: Int = 255,
@@ -168,4 +169,17 @@ fun transformMillsToFormattedTime(mills: Long): String {
 
 fun getExoPlayer(context: Context): ExoPlayer {
     return ExoPlayer.Builder(context).build()
+}
+
+fun Activity.doPhotoPrint(
+    bitmap: Bitmap,
+    scaleMode: Int = PrintHelper.SCALE_MODE_FIT
+) {
+    also { context ->
+        PrintHelper(context).apply {
+            this.scaleMode = scaleMode
+        }.also { printHelper ->
+            printHelper.printBitmap("Image print", bitmap)
+        }
+    }
 }
