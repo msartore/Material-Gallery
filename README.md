@@ -1,6 +1,6 @@
 # Material Gallery
 
-<img src="Resources/banner.png">
+<img src="resources/banner.png">
 
 [![CodeFactor](https://www.codefactor.io/repository/github/msartore/material-gallery/badge)](https://www.codefactor.io/repository/github/msartore/material-gallery) ![GitHub release (latest by date)](https://img.shields.io/github/v/release/msartore/Material-Gallery) 
 
