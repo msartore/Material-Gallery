@@ -1,22 +1,11 @@
 # Material Gallery
 
+<img src="Resources/banner.png">
+
 [![CodeFactor](https://www.codefactor.io/repository/github/msartore/material-gallery/badge)](https://www.codefactor.io/repository/github/msartore/material-gallery) ![GitHub release (latest by date)](https://img.shields.io/github/v/release/msartore/Material-Gallery) 
 
 ## 💡 Introduction
 Material Gallery is a project that aims to be up to date to latest [Material guidelines](https://m3.material.io/) with beautiful UI and stunning animations
-
-<a href='https://play.google.com/store/apps/details?id=dev.msartore.gallery'>
-    <img src='resources/button-google-play.svg' alt='Get it on Google Play' height='45' />
-</a>
-<a href='https://github.com/msartore/Material-Gallery/releases/latest'>
-    <img src='resources/button-github-release.png' alt='Get it on Google Play' height='45' />
-</a>
-
-<div style="display:flex;">
-<img alt="App image" src="resources/screen4.svg" width="30%">
-<img alt="App image" src="resources/screen3.svg" width="30%">
-<img alt="App image" src="resources/screen2.svg" width="30%">
-</div>
 
 ## 🌟 Features
 
