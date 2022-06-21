@@ -45,7 +45,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.MediaItem
-import com.google.android.exoplayer2.ui.PlayerView
+import com.google.android.exoplayer2.ui.StyledPlayerView
 import dev.msartore.gallery.R
 import dev.msartore.gallery.models.CustomTimer
 import dev.msartore.gallery.models.PlayerEventListener
@@ -205,10 +205,11 @@ fun VideoViewerUI(
                     }
                 }
             },
-        factory = { context1 ->
-            PlayerView(context1).apply {
+        factory = { context ->
+
+            StyledPlayerView(context).apply {
                 player = exoPlayer
-                this.useController = false
+                useController = false
             }
         }
     )
@@ -232,7 +233,7 @@ fun VideoViewerUI(
     }
 
     AnimatedVisibility(
-        visible = isToolbarVisible.value && !isLoading.value,
+        visible = isToolbarVisible.value,
         enter = slideInVertically(
             initialOffsetY = {it},
             animationSpec = tween(durationMillis = 600)

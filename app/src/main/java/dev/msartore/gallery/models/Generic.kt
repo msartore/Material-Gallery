@@ -130,7 +130,7 @@ class PlayerEventListener(
     val onTrackChanged: (trackGroups: TrackGroupArray, trackSelections: TrackSelectionArray) -> Unit = { _, _ -> },
     val onDiscontinuity: () -> Unit = {},
 ) : Player.Listener {
-    override fun onTracksChanged(
+    fun onTracksChanged(
         trackGroups: TrackGroupArray,
         trackSelections: TrackSelectionArray
     ) {

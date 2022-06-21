@@ -17,7 +17,6 @@
 package dev.msartore.gallery.utils
 
 import android.app.Activity
-import android.app.RecoverableSecurityException
 import android.content.ContentResolver
 import android.content.ContentUris
 import android.content.Context
@@ -31,6 +30,7 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
 import android.provider.MediaStore.MediaColumns
+import android.util.Log
 import android.util.Size
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.IntentSenderRequest
@@ -42,6 +42,7 @@ import dev.msartore.gallery.models.MediaInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.*
+
 
 fun ContentResolver.queryImageMediaStore(): List<MediaClass> {
 
@@ -253,42 +254,31 @@ fun Context.unregisterContentResolver(contentObserver: ContentObserver) =
 
 @Suppress("DEPRECATION")
 suspend fun ContentResolver.deletePhotoFromExternalStorage(
-    photoUri: Uri,
-    intentSenderLauncher: ActivityResultLauncher<IntentSenderRequest>,
-    actionUpdateList: () -> Unit
+    uris: List<Uri>,
+    intentSenderLauncher: ActivityResultLauncher<IntentSenderRequest>
 ) {
     withContext(Dispatchers.IO) {
 
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q){
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q){
+            uris.forEach { uri ->
+                getPath(uri)?.let { path ->
+                    val where = MediaColumns.DATA + "=?"
+                    val selectionArgs = arrayOf(path)
+                    val filesUri = MediaStore.Files.getContentUri("external")
 
-            getPath(photoUri)?.let { path ->
-                val where = MediaColumns.DATA + "=?"
-                val selectionArgs = arrayOf(path)
-                val filesUri = MediaStore.Files.getContentUri("external")
-
-                if (delete(filesUri, where, selectionArgs) > 0)
-                    actionUpdateList()
+                    delete(filesUri, where, selectionArgs)
+                }
             }
         }
         else {
             try {
-                delete(photoUri, null, null)
+                intentSenderLauncher.launch(
+                    IntentSenderRequest.Builder(
+                        MediaStore.createDeleteRequest(this@deletePhotoFromExternalStorage, uris).intentSender
+                    ).build()
+                )
             } catch (e: SecurityException) {
-                val intentSender = when {
-                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.R -> {
-                        MediaStore.createDeleteRequest(this@deletePhotoFromExternalStorage, listOf(photoUri)).intentSender
-                    }
-                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q -> {
-                        val recoverableSecurityException = e as? RecoverableSecurityException
-                        recoverableSecurityException?.userAction?.actionIntent?.intentSender
-                    }
-                    else -> null
-                }
-                intentSender?.let { sender ->
-                    intentSenderLauncher.launch(
-                        IntentSenderRequest.Builder(sender).build()
-                    )
-                }
+                Log.e("ContentResolver", "SecurityException", e)
             }
         }
     }

@@ -21,7 +21,6 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import android.database.ContentObserver
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.os.VibrationEffect
 import android.provider.Settings
@@ -30,16 +29,14 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.rememberLazyGridState
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material.BottomDrawerValue
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.rememberBottomDrawerState
 import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
@@ -63,21 +60,19 @@ import dev.msartore.gallery.ui.theme.GalleryTheme
 import dev.msartore.gallery.utils.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @SuppressLint("NewApi")
-@OptIn(ExperimentalAnimationApi::class, ExperimentalFoundationApi::class,
-    ExperimentalMaterialApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalAnimationApi::class,
+    ExperimentalMaterialApi::class
+)
 class MainActivity : ComponentActivity() {
 
     object BasicInfo{
         val isDarkTheme = mutableStateOf(false)
     }
 
-    private var imageDeleteCounter = 0
-    private var deleteInProgress = false
     private var updateNeeded = false
     private var deletedImageUri: Uri? = null
     private var deleteAction: (() -> Unit)? = null
@@ -122,13 +117,6 @@ class MainActivity : ComponentActivity() {
     private var intentSenderLauncher =
         registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { activityResult ->
             if (activityResult.resultCode == RESULT_OK) {
-
-                if(Build.VERSION.SDK_INT == Build.VERSION_CODES.Q) {
-                    lifecycleScope.launch {
-                        setVarsAndDeleteImage(deletedImageUri ?: return@launch)
-                    }
-                }
-
                 updateNeeded = true
 
                 runCatching {
@@ -138,18 +126,12 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            imageDeleteCounter -= 1
+            unselectAll()
 
-            if (imageDeleteCounter == 0) {
-
-                unselectAll()
-                deleteInProgress = false
-
-                if (updateNeeded) {
-                    updateNeeded = false
-                    lifecycleScope.launch {
-                        updateList.emit(Unit)
-                    }
+            if (updateNeeded) {
+                updateNeeded = false
+                lifecycleScope.launch {
+                    updateList.emit(Unit)
                 }
             }
         }
@@ -199,57 +181,52 @@ class MainActivity : ComponentActivity() {
 
         cor {
             mediaDeleteFlow.collect { deleteMediaVars ->
-                deleteInProgress = true
                 checkBoxVisible.value = false
-                imageDeleteCounter = deleteMediaVars.listUri.size
 
                 if (deleteMediaVars.listUri.size == 1) {
                     deleteAction = deleteMediaVars.action
                 }
 
-                deleteMediaVars.listUri.forEach { uri ->
-                    setVarsAndDeleteImage(uri)
-                }
+                deleteFiles(deleteMediaVars.listUri)
             }
         }
 
         cor {
             updateList.collect {
 
-                if (!deleteInProgress)
-                    cor {
-                        mediaList.busy.value = true
+                cor {
+                    mediaList.busy.value = true
 
-                        mediaList.list.clear()
+                    mediaList.list.clear()
 
-                        mediaList.list.addAll(contentResolver.queryImageMediaStore())
-                        mediaList.list.addAll(contentResolver.queryVideoMediaStore())
-                        mediaList.sort(true)
+                    mediaList.list.addAll(contentResolver.queryImageMediaStore())
+                    mediaList.list.addAll(contentResolver.queryVideoMediaStore())
+                    mediaList.sort(true)
 
-                        uriIntent?.let { ui ->
+                    uriIntent?.let { ui ->
 
-                            contentResolver.apply {
-                                mediaList.list.find { getPath(it.uri) == getPath(ui) }?.let {
-                                    selectedMedia.value = it
-                                    mediaIndex.value = it.index
-                                }
-
-                                customAction = {
-                                    finishAffinity()
-                                }
-
-                                uriIntent = null
+                        contentResolver.apply {
+                            mediaList.list.find { getPath(it.uri) == getPath(ui) }?.let {
+                                selectedMedia.value = it
+                                mediaIndex.value = it.index
                             }
-                        }
 
-                        mediaList.busy.value = false
-                        updateNeeded = false
+                            customAction = {
+                                finishAffinity()
+                            }
 
-                        if (deleteAction != null) {
-                            deleteAction?.invoke()
-                            deleteAction = null
+                            uriIntent = null
                         }
                     }
+
+                    mediaList.busy.value = false
+                    updateNeeded = false
+
+                    if (deleteAction != null) {
+                        deleteAction?.invoke()
+                        deleteAction = null
+                    }
+                }
             }
         }
 
@@ -269,6 +246,7 @@ class MainActivity : ComponentActivity() {
             val gestureEnabled = remember { mutableStateOf(false) }
             val bottomDrawerValue = remember { mutableStateOf(BottomDrawer.Sort)}
             val dialogPrint = remember { mutableStateOf(false) }
+            val firstVisibleItemScrollOffset = remember { derivedStateOf { lazyGridState.firstVisibleItemScrollOffset } }
 
             GalleryTheme(
                 changeStatusBarColor = resetStatusBarColor,
@@ -475,7 +453,7 @@ class MainActivity : ComponentActivity() {
                                                 }
 
                                                 ToolBarUI(
-                                                    visible = (lazyGridState.firstVisibleItemScrollOffset == 0 || !lazyGridState.isScrollInProgress || checkBoxVisible.value) && toolbarVisible.value,
+                                                    visible = ((firstVisibleItemScrollOffset.value == 0) || !lazyGridState.isScrollInProgress || checkBoxVisible.value) && toolbarVisible.value,
                                                     mediaList = mediaList.list,
                                                     mediaDelete = mediaDeleteFlow,
                                                     selectedMedia = selectedMedia,
@@ -484,7 +462,7 @@ class MainActivity : ComponentActivity() {
                                                     bottomDrawerState = bottomDrawerState,
                                                     backgroundColor =
                                                     if (mediaIndex.value == null) {
-                                                        if (lazyGridState.firstVisibleItemScrollOffset == 0) {
+                                                        if (firstVisibleItemScrollOffset.value == 0) {
                                                             colorScheme.background
                                                         } else {
                                                             colorScheme.surface
@@ -587,14 +565,10 @@ class MainActivity : ComponentActivity() {
                     index
     }
 
-    private suspend fun setVarsAndDeleteImage(
-        photoUri: Uri
+    private suspend fun deleteFiles(
+        uris: List<Uri>,
     ) {
-        deletedImageUri = photoUri
-
-        contentResolver.deletePhotoFromExternalStorage(photoUri, intentSenderLauncher) {
-            deleteInProgress = false
-        }
+        contentResolver.deletePhotoFromExternalStorage(uris, intentSenderLauncher)
     }
 
     override fun onDestroy() {
