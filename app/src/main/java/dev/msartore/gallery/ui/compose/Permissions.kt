@@ -16,69 +16,55 @@
 
 package dev.msartore.gallery.ui.compose
 
-import android.Manifest
 import android.os.Build
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.res.stringResource
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import com.google.accompanist.permissions.PermissionRequired
-import com.google.accompanist.permissions.rememberPermissionState
+import com.google.accompanist.permissions.MultiplePermissionsState
+import com.google.accompanist.permissions.shouldShowRationale
 import dev.msartore.gallery.R
 import dev.msartore.gallery.ui.compose.basic.Dialog
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun FileAndMediaPermission(
-    permission: String,
+    fileAndMediaPermissionState: MultiplePermissionsState?,
     navigateToSettingsScreen: () -> Unit,
     onPermissionGranted: @Composable () -> Unit,
     onPermissionDenied: () -> Unit
 ) {
-    // Track if the user doesn't want to see the rationale any more.
-    val doNotShowRationale = rememberSaveable { mutableStateOf(false) }
-    val fileAndMediaPermissionState = rememberPermissionState(permission)
-    val showFailedDialog = remember { mutableStateOf(false) }
 
-    if (permission == Manifest.permission.WRITE_EXTERNAL_STORAGE && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
-        onPermissionGranted()
-    else {
-        PermissionRequired(
-            permissionState = fileAndMediaPermissionState,
-            permissionNotGrantedContent = {
-                if (doNotShowRationale.value) {
-                    onPermissionDenied.invoke()
-                } else {
+    fileAndMediaPermissionState?.let { mPermissionState ->
+        if (mPermissionState.allPermissionsGranted ||
+            mPermissionState.revokedPermissions.size == 1 &&
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
+        )
+            onPermissionGranted()
+        else {
+            val dialogStatus = remember { mutableStateOf(true) }
 
-                    val dialogStatus = remember { mutableStateOf(true) }
-
-                    Dialog(
-                        title = stringResource(R.string.permission_request),
-                        text = stringResource(R.string.permission_request_text),
-                        closeOnClick = false,
-                        status = dialogStatus,
-                        onCancel = {
-                            doNotShowRationale.value = true
-                            dialogStatus.value = false
-                        },
-                        onConfirm = {
-                            fileAndMediaPermissionState.launchPermissionRequest()
-                        }
-                    )
+            Dialog(
+                title = stringResource(R.string.permission_request),
+                text = stringResource(R.string.permission_request_text),
+                closeOnClick = false,
+                status = dialogStatus,
+                onCancel = {
+                    onPermissionDenied()
+                },
+                onConfirm = {
+                    dialogStatus.value = false
+                    fileAndMediaPermissionState.permissions.forEach {
+                        it.launchPermissionRequest()
+                    }
                 }
-            },
-            permissionNotAvailableContent = {
-                showFailedDialog.value = true
-            }
-        ) {
-            onPermissionGranted.invoke()
+            )
         }
 
-        if (showFailedDialog.value)
+        if (fileAndMediaPermissionState.permissions.any { it.status.shouldShowRationale })
             DialogPermissionRejected(
-                navigateToSettingsScreen =  navigateToSettingsScreen,
+                navigateToSettingsScreen = navigateToSettingsScreen,
                 onCancel = onPermissionDenied
             )
     }

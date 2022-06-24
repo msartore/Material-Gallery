@@ -35,10 +35,7 @@ import android.util.Size
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.IntentSenderRequest
 import androidx.compose.ui.graphics.asImageBitmap
-import com.bumptech.glide.Glide
-import dev.msartore.gallery.models.DatabaseInfo
-import dev.msartore.gallery.models.MediaClass
-import dev.msartore.gallery.models.MediaInfo
+import dev.msartore.gallery.models.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.*
@@ -101,9 +98,9 @@ fun ContentResolver.queryImageMediaStore(): List<MediaClass> {
                 MediaClass(
                     uri = contentUri,
                     name = name,
+                    type = MediaType.IMAGE,
                     size = size,
-                    date =  if (dateTaken >= dateModified) dateTaken else dateModified,
-                    uuid = UUID.randomUUID()
+                    date =  if (dateTaken >= dateModified) dateTaken else dateModified
                 )
             )
         }
@@ -171,11 +168,11 @@ fun ContentResolver.queryVideoMediaStore(): List<MediaClass> {
             videoList.add(
                 MediaClass(
                     uri = contentUri,
+                    type = MediaType.VIDEO,
                     name = name,
                     size = size,
                     date = if (dateTaken >= dateModified) dateTaken else dateModified,
-                    duration = transformMillsToFormattedTime(duration),
-                    uuid = UUID.randomUUID()
+                    duration = transformMillsToFormattedTime(duration)
                 )
             )
         }
@@ -313,5 +310,4 @@ fun Activity.shareImage(imageUriArray: ArrayList<Uri>) {
 }
 
 fun loadThumbnail(context: Context, media: MediaClass, multiplier: Int) =
-    Glide.with(context).asBitmap().load(media.uri).submit(multiplier * 2, multiplier * 2).get().asImageBitmap()
-
+    GlideApp.with(context).asBitmap().load(media.uri).submit(multiplier * 2, multiplier * 2).get().asImageBitmap()

@@ -22,7 +22,7 @@
     <string name="permission_request">Richiesta permesso</string>
     <string name="permission_request_text">Questa app deve avere accesso alle tue Foto e ai tuoi Media per funzionare. Si prega di concedere il permesso.</string>
     <string name="permission_rejected">Permesso rifiutato</string>
-    <string name="permission_rejected_text">Autorizzazione file e media negata. Per favore, concedici l\'accesso nella schermata Impostazioni.</string>
+    <string name="permission_rejected_text">Autorizzazione file e media negata. Se vuoi usare l\'app, concedici l\'accesso nella schermata Impostazioni.</string>
     <string name="open_settings">Apri le impostazioni</string>
     <string name="confirm">Conferma</string>
     <string name="cancel">Annulla</string>

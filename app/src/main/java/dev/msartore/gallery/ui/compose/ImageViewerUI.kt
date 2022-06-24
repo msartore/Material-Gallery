@@ -26,7 +26,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.CircularProgressIndicator
-import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -49,11 +48,11 @@ import dev.msartore.gallery.utils.getImageSize
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun ContentResolver.ImageViewerUI(
     context: Context,
     image: MediaClass,
+    staticViewer: Boolean = false,
     onControllerVisibilityChanged: () -> Boolean,
     changeMedia: (ChangeMediaState) -> Unit,
 ) {
@@ -138,8 +137,7 @@ fun ContentResolver.ImageViewerUI(
                         if (rotation.value != 0f || scale.value != 1f) {
                             image.imageTransform.value = true
                         }
-                        else {
-
+                        else if (!staticViewer) {
                             slideMemory.add(centroid.x)
 
                             if (slideMemory.size == 2) {
@@ -158,7 +156,6 @@ fun ContentResolver.ImageViewerUI(
                                 slideMemory.clear()
                             }
                         }
-
                     }
                 }
             }

@@ -62,6 +62,7 @@ fun VideoViewerUI(
     exoPlayer: ExoPlayer,
     uri: Uri,
     onClose: () -> Unit,
+    staticViewer: Boolean = false,
     isToolbarVisible: MutableState<Boolean>,
     onChangeMedia: (ChangeMediaState) -> Unit
 ) {
@@ -179,28 +180,30 @@ fun VideoViewerUI(
                 )
             }
             .pointerInput(Unit) {
-                forEachGesture {
-                    detectTransformGestures { centroid, _, _, _ ->
+                if (!staticViewer) {
+                    forEachGesture {
+                        detectTransformGestures { centroid, _, _, _ ->
 
-                        slideMemory.add(centroid.x)
+                            slideMemory.add(centroid.x)
 
-                        if (slideMemory.size == 2) {
+                            if (slideMemory.size == 2) {
 
-                            exoPlayer.playWhenReady = false
-                            exoPlayer.stop()
-                            timer.stop()
-                            systemUiController.changeBarsStatus(true)
+                                exoPlayer.playWhenReady = false
+                                exoPlayer.stop()
+                                timer.stop()
+                                systemUiController.changeBarsStatus(true)
 
-                            when {
-                                slideMemory[0] < slideMemory[1] ->
-                                    onChangeMedia(ChangeMediaState.Backward)
-                                slideMemory[0] > slideMemory[1] ->
-                                    onChangeMedia(ChangeMediaState.Forward)
+                                when {
+                                    slideMemory[0] < slideMemory[1] ->
+                                        onChangeMedia(ChangeMediaState.Backward)
+                                    slideMemory[0] > slideMemory[1] ->
+                                        onChangeMedia(ChangeMediaState.Forward)
+                                }
                             }
-                        }
 
-                        if (slideMemory.size > 3) {
-                            slideMemory.clear()
+                            if (slideMemory.size > 3) {
+                                slideMemory.clear()
+                            }
                         }
                     }
                 }

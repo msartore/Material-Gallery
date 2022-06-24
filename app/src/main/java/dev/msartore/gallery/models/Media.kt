@@ -19,20 +19,18 @@ package dev.msartore.gallery.models
 import android.net.Uri
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.graphics.ImageBitmap
-import java.util.*
 
 open class MediaClass(
     val uri: Uri,
-    val name: String,
-    val size: Int,
-    val date: Long,
+    var type: MediaType,
+    var name: String? = null,
+    val size: Int? = null,
+    val date: Long? = null,
     val duration: String? = null,
-    var uuid: UUID,
+    var index: Int = -1,
     val imageTransform: MutableState<Boolean> = mutableStateOf(false),
     var selected: MutableState<Boolean> = mutableStateOf(false),
     var actionReset: () -> Unit = {},
-    var index: Int = -1,
 )
 
 data class DatabaseInfo(
@@ -50,7 +48,7 @@ data class DeleteMediaVars(
     val action: (() -> Unit)? = null
 )
 
-data class Media(
-    var imageBitmap: ImageBitmap? = null,
-    var uuid: UUID
-)
+enum class MediaType {
+    IMAGE,
+    VIDEO
+}

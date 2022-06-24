@@ -47,13 +47,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.MultiplePermissionsState
+import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import com.google.android.exoplayer2.ExoPlayer
 import dev.msartore.gallery.MainActivity.BasicInfo.isDarkTheme
-import dev.msartore.gallery.models.DeleteMediaVars
-import dev.msartore.gallery.models.LoadingStatus
-import dev.msartore.gallery.models.MediaClass
-import dev.msartore.gallery.models.MediaList
+import dev.msartore.gallery.models.*
+import dev.msartore.gallery.models.MediaType.*
 import dev.msartore.gallery.ui.compose.*
 import dev.msartore.gallery.ui.compose.basic.TextAuto
 import dev.msartore.gallery.ui.theme.GalleryTheme
@@ -104,6 +105,7 @@ class MainActivity : ComponentActivity() {
                         }
 
                         unselectAll()
+
                         vibrate(
                             duration = 250,
                             amplitude = VibrationEffect.CONTENTS_FILE_DESCRIPTOR
@@ -136,25 +138,27 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+    @OptIn(ExperimentalPermissionsApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
 
         super.onCreate(savedInstanceState)
 
         val context = this
+        var fileAndMediaPermissionState: MultiplePermissionsState? = null
         var customAction: (() -> Unit)? = null
         val mediaIndex = mutableStateOf<Int?>(null)
         val selectedMedia = mutableStateOf<MediaClass?>(null)
         val mediaDeleteFlow = MutableSharedFlow<DeleteMediaVars>()
         var backToListAction = {}
         val getContent = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-            if (it.resultCode != RESULT_OK) {
-                finishAffinity()
+            fileAndMediaPermissionState?.allPermissionsGranted?.let {
+                if (!it) {
+                    finishAffinity()
+                }
             }
         }
         val sIntent = intent
         val action = sIntent.action
-        val type = sIntent.type
-        var uriIntent: Uri? = null
         val intentSettings = Intent(
             Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
             Uri.fromParts("package", packageName, null)
@@ -168,14 +172,7 @@ class MainActivity : ComponentActivity() {
             intentSaveLocation.launch(intentCreateDocument)
         }
 
-        if (Intent.ACTION_VIEW == action && type != null) {
-            val uri = sIntent.data
-            uri?.let {
-                uriIntent = it
-            }
-        }
-
-        contentObserver = this.initContentResolver(contentResolver) {
+        contentObserver = initContentResolver(contentResolver) {
             cor { updateList.emit(Unit) }
         }
 
@@ -191,6 +188,27 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+        if (Intent.ACTION_VIEW == action) {
+
+            sIntent.data?.let { uri ->
+                sIntent.type?.let { type ->
+                    selectedMedia.value = MediaClass(
+                        uri = uri,
+                        type = when {
+                            type.contains("image") -> IMAGE
+                            else -> VIDEO
+                        }
+                    )
+
+                    mediaIndex.value = -1
+
+                    customAction = {
+                        finishAffinity()
+                    }
+                }
+            }
+        }
+
         cor {
             updateList.collect {
 
@@ -202,22 +220,6 @@ class MainActivity : ComponentActivity() {
                     mediaList.list.addAll(contentResolver.queryImageMediaStore())
                     mediaList.list.addAll(contentResolver.queryVideoMediaStore())
                     mediaList.sort(true)
-
-                    uriIntent?.let { ui ->
-
-                        contentResolver.apply {
-                            mediaList.list.find { getPath(it.uri) == getPath(ui) }?.let {
-                                selectedMedia.value = it
-                                mediaIndex.value = it.index
-                            }
-
-                            customAction = {
-                                finishAffinity()
-                            }
-
-                            uriIntent = null
-                        }
-                    }
 
                     mediaList.busy.value = false
                     updateNeeded = false
@@ -248,6 +250,8 @@ class MainActivity : ComponentActivity() {
             val dialogPrint = remember { mutableStateOf(false) }
             val firstVisibleItemScrollOffset = remember { derivedStateOf { lazyGridState.firstVisibleItemScrollOffset } }
 
+            fileAndMediaPermissionState = rememberMultiplePermissionsState(permissions = listOf(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE))
+
             GalleryTheme(
                 changeStatusBarColor = resetStatusBarColor,
                 isDarkTheme = isDarkTheme,
@@ -257,8 +261,9 @@ class MainActivity : ComponentActivity() {
                     color = if (mediaIndex.value != null) Color.Black else colorScheme.background
                 ) {
                     Box(modifier = Modifier.fillMaxSize()) {
+
                         FileAndMediaPermission(
-                            permission = Manifest.permission.READ_EXTERNAL_STORAGE,
+                            fileAndMediaPermissionState = fileAndMediaPermissionState,
                             navigateToSettingsScreen = {
                                 getContent.launch(intentSettings)
                             },
@@ -267,272 +272,258 @@ class MainActivity : ComponentActivity() {
                             },
                             onPermissionGranted = {
 
-                                FileAndMediaPermission(
-                                    permission = Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                                    navigateToSettingsScreen = {
-                                        getContent.launch(intentSettings)
-                                    },
-                                    onPermissionDenied = {
-                                        finishAffinity()
-                                    },
-                                    onPermissionGranted = {
-
-                                        BackHandler(enabled = true){
-                                            when {
-                                                isAboutSectionVisible.value -> {
-                                                    scope.launch {
-                                                        bottomDrawerState.close()
-                                                    }
-                                                    isAboutSectionVisible.value = false
-                                                }
-                                                !bottomDrawerState.isClosed -> scope.launch {
-                                                    bottomDrawerState.close()
-                                                }
-                                                selectedMedia.value != null -> backToListAction()
-                                                else -> finishAffinity()
+                                BackHandler(enabled = true){
+                                    when {
+                                        isAboutSectionVisible.value -> {
+                                            scope.launch {
+                                                bottomDrawerState.close()
                                             }
+                                            isAboutSectionVisible.value = false
                                         }
-
-                                        LaunchedEffect(key1 = true) {
-                                            updateList.emit(Unit)
+                                        !bottomDrawerState.isClosed -> scope.launch {
+                                            bottomDrawerState.close()
                                         }
-
-                                        AnimatedVisibility(
-                                            visible = isAboutSectionVisible.value,
-                                            enter = slideInHorizontally { it },
-                                            exit = slideOutHorizontally { -it },
-                                        ) {
-                                            AboutUI {
-                                                scope.launch {
-                                                    bottomDrawerState.close()
-                                                }
-                                                isAboutSectionVisible.value = false
-                                            }
-                                        }
-
-                                        AnimatedVisibility(
-                                            visible = !isAboutSectionVisible.value,
-                                           enter = slideInHorizontally { -it },
-                                            exit = slideOutHorizontally { -it },
-                                        ) {
-                                            CustomBottomDrawer(
-                                                context = context,
-                                                contentResolver = contentResolver,
-                                                gestureEnabled = gestureEnabled,
-                                                mediaList = mediaList,
-                                                bottomDrawerValue = bottomDrawerValue,
-                                                isAboutSectionVisible = isAboutSectionVisible,
-                                                mediaClass = selectedMedia.value,
-                                                drawerState = bottomDrawerState,
-                                                onPDFClick = { uri ->
-
-                                                    mediaList.list.forEach {
-                                                        if (it.uri == uri)
-                                                            it.selected.value = true
-                                                    }
-
-                                                    onPDFClick()
-                                                },
-                                                onImagePrintClick = {
-                                                    dialogPrint.value = true
-                                                }
-                                            ) {
-
-                                                AnimatedVisibility(
-                                                    visible = mediaIndex.value == null && mediaList.list.isNotEmpty(),
-                                                    enter = expandVertically(),
-                                                    exit = fadeOut()
-                                                ) {
-                                                    if (!mediaList.busy.value)
-                                                        MediaListUI(
-                                                            lazyGridState = lazyGridState,
-                                                            mediaList = mediaList.list,
-                                                            checkBoxVisible = checkBoxVisible,
-                                                        ) { mediaClass ->
-                                                            bottomDrawerValue.value = BottomDrawer.Media
-                                                            mediaIndex.value = mediaClass.index
-                                                            selectedMedia.value = mediaList.list.find { it.index == mediaIndex.value }
-                                                        }
-                                                }
-
-                                                AnimatedVisibility(
-                                                    visible = mediaIndex.value != null,
-                                                    enter = scaleIn()
-                                                ) {
-
-                                                    DisposableEffect(key1 = true) {
-
-                                                        systemUiController.setSystemBarsColor(
-                                                            color = Color.Black,
-                                                            darkIcons = false
-                                                        )
-
-                                                        onDispose {
-                                                            resetStatusBarColor.value()
-                                                            systemUiController.changeBarsStatus(true)
-                                                        }
-                                                    }
-
-                                                    if (mediaIndex.value != null)
-                                                        AnimatedContent(
-                                                            targetState = mediaIndex.value,
-                                                            transitionSpec = {
-                                                                if (targetState!! > initialState!!) {
-                                                                    slideInHorizontally { width -> width } + fadeIn() with
-                                                                            slideOutHorizontally { width -> -width } + fadeOut()
-                                                                } else {
-                                                                    slideInHorizontally { width -> -width } + fadeIn() with
-                                                                            slideOutHorizontally { width -> width } + fadeOut()
-                                                                }.using(
-                                                                    SizeTransform(clip = false)
-                                                                )
-                                                            }
-                                                        ) {
-
-                                                            LaunchedEffect(key1 = mediaIndex.value) {
-                                                                if (selectedMedia.value?.duration != null)
-                                                                    backToListAction = {
-                                                                        exoPlayer?.playWhenReady = false
-                                                                        exoPlayer?.stop()
-                                                                        customAction?.invoke()
-                                                                        mediaIndex.value = null
-                                                                        selectedMedia.value = null
-                                                                        toolbarVisible.value = true
-                                                                        scope.launch { bottomDrawerState.close() }
-                                                                    }
-                                                                else
-                                                                    backToListAction = {
-                                                                        customAction?.invoke()
-                                                                        mediaIndex.value = null
-                                                                        selectedMedia.value = null
-                                                                        toolbarVisible.value = true
-                                                                        scope.launch { bottomDrawerState.close() }
-                                                                    }
-                                                            }
-
-                                                            if (selectedMedia.value != null) {
-                                                                if (selectedMedia.value?.duration == null)
-                                                                    contentResolver.ImageViewerUI(
-                                                                        context = context,
-                                                                        image = selectedMedia.value!!,
-                                                                        onControllerVisibilityChanged = {
-                                                                            toolbarVisible.value = !toolbarVisible.value
-
-                                                                            toolbarVisible.value
-                                                                        }
-                                                                    ) { status ->
-
-                                                                        mediaIndex.value =
-                                                                            calculatePossibleIndex(
-                                                                                status,
-                                                                                mediaIndex.value!!
-                                                                            )
-
-                                                                        if (selectedMedia.value?.index != mediaIndex.value)
-                                                                            selectedMedia.value = mediaList.list.find { it.index == mediaIndex.value }
-                                                                    }
-                                                                else
-                                                                    VideoViewerUI(
-                                                                        exoPlayer = exoPlayer!!,
-                                                                        selectedMedia.value!!.uri,
-                                                                        onClose = backToListAction,
-                                                                        isToolbarVisible = toolbarVisible
-                                                                    ) { status ->
-
-                                                                        mediaIndex.value =
-                                                                            calculatePossibleIndex(
-                                                                                status,
-                                                                                mediaIndex.value!!
-                                                                            )
-
-                                                                        if (selectedMedia.value?.index != mediaIndex.value)
-                                                                            selectedMedia.value = mediaList.list.find { it.index == mediaIndex.value }
-                                                                    }
-                                                            }
-                                                        }
-                                                }
-
-                                                ToolBarUI(
-                                                    visible = ((firstVisibleItemScrollOffset.value == 0) || !lazyGridState.isScrollInProgress || checkBoxVisible.value) && toolbarVisible.value,
-                                                    mediaList = mediaList.list,
-                                                    mediaDelete = mediaDeleteFlow,
-                                                    selectedMedia = selectedMedia,
-                                                    checkBoxVisible = checkBoxVisible,
-                                                    bottomDrawerValue = bottomDrawerValue,
-                                                    bottomDrawerState = bottomDrawerState,
-                                                    backgroundColor =
-                                                    if (mediaIndex.value == null) {
-                                                        if (firstVisibleItemScrollOffset.value == 0) {
-                                                            colorScheme.background
-                                                        } else {
-                                                            colorScheme.surface
-                                                        }
-                                                    }
-                                                    else Color.Transparent,
-                                                    onPDFClick = onPDFClick,
-                                                    backToList = backToListAction
-                                                )
-
-                                                AnimatedVisibility(
-                                                    visible = mediaList.busy.value && selectedMedia.value == null,
-                                                    enter = scaleIn(),
-                                                    exit = scaleOut()
-                                                ) {
-                                                    Column(
-                                                        modifier = Modifier.fillMaxSize(),
-                                                        verticalArrangement = Arrangement.Center,
-                                                        horizontalAlignment = Alignment.CenterHorizontally
-                                                    ) {
-                                                        CircularProgressIndicator(
-                                                            modifier = Modifier
-                                                                .size(40.dp),
-                                                            color = colorScheme.primary
-                                                        )
-                                                    }
-                                                }
-
-                                                AnimatedVisibility(
-                                                    visible = mediaList.list.isEmpty() && !mediaList.busy.value,
-                                                    enter = fadeIn(),
-                                                    exit = fadeOut()
-                                                ) {
-                                                    Column(
-                                                        modifier = Modifier
-                                                            .align(Alignment.Center)
-                                                            .fillMaxHeight(),
-                                                        verticalArrangement = Arrangement.SpaceEvenly,
-                                                        horizontalAlignment = Alignment.CenterHorizontally
-                                                    ) {
-                                                        Image(
-                                                            modifier = Modifier.padding(16.dp),
-                                                            painter = painterResource(id = R.drawable.ic_empty_pana),
-                                                            contentDescription = stringResource(id = R.string.no_media_found)
-                                                        )
-
-                                                        TextAuto(id = R.string.no_media_found)
-
-                                                        Button(
-                                                            onClick = { cor { updateList.emit(Unit) } },
-                                                            enabled = !mediaList.busy.value
-                                                        ) {
-                                                            TextAuto(id = R.string.refresh)
-                                                        }
-                                                    }
-                                                }
-
-                                                DialogPrintUI(
-                                                    status = dialogPrint,
-                                                    uri = selectedMedia.value?.uri,
-                                                )
-
-                                                DialogLoadingUI(
-                                                    status = dialogLoadingStatus.status,
-                                                    text = dialogLoadingStatus.text
-                                                )
-                                            }
-                                        }
+                                        selectedMedia.value != null -> backToListAction()
+                                        else -> finishAffinity()
                                     }
-                                )
+                                }
+
+                                LaunchedEffect(key1 = true) {
+                                    updateList.emit(Unit)
+                                }
+
+                                AnimatedVisibility(
+                                    visible = isAboutSectionVisible.value,
+                                    enter = slideInHorizontally { it },
+                                    exit = slideOutHorizontally { -it },
+                                ) {
+                                    AboutUI {
+                                        scope.launch {
+                                            bottomDrawerState.close()
+                                        }
+                                        isAboutSectionVisible.value = false
+                                    }
+                                }
+
+                                AnimatedVisibility(
+                                    visible = !isAboutSectionVisible.value,
+                                    enter = slideInHorizontally { -it },
+                                    exit = slideOutHorizontally { -it },
+                                ) {
+                                    CustomBottomDrawer(
+                                        context = context,
+                                        contentResolver = contentResolver,
+                                        gestureEnabled = gestureEnabled,
+                                        mediaList = mediaList,
+                                        bottomDrawerValue = bottomDrawerValue,
+                                        isAboutSectionVisible = isAboutSectionVisible,
+                                        mediaClass = selectedMedia.value,
+                                        drawerState = bottomDrawerState,
+                                        onImagePrintClick = {
+                                            dialogPrint.value = true
+                                        }
+                                    ) {
+
+                                        AnimatedVisibility(
+                                            visible = mediaIndex.value == null && mediaList.list.isNotEmpty(),
+                                            enter = expandVertically(),
+                                            exit = fadeOut()
+                                        ) {
+                                            if (!mediaList.busy.value)
+                                                MediaListUI(
+                                                    lazyGridState = lazyGridState,
+                                                    mediaList = mediaList.list,
+                                                    checkBoxVisible = checkBoxVisible,
+                                                ) { mediaClass ->
+                                                    bottomDrawerValue.value = BottomDrawer.Media
+                                                    mediaIndex.value = mediaClass.index
+                                                    selectedMedia.value = mediaList.list.find { it.index == mediaIndex.value }
+                                                }
+                                        }
+
+                                        AnimatedVisibility(
+                                            visible = mediaIndex.value != null,
+                                            enter = scaleIn()
+                                        ) {
+
+                                            DisposableEffect(key1 = true) {
+
+                                                systemUiController.setSystemBarsColor(
+                                                    color = Color.Black,
+                                                    darkIcons = false
+                                                )
+
+                                                onDispose {
+                                                    resetStatusBarColor.value()
+                                                    systemUiController.changeBarsStatus(true)
+                                                }
+                                            }
+
+                                            if (mediaIndex.value != null)
+                                                AnimatedContent(
+                                                    targetState = mediaIndex.value,
+                                                    transitionSpec = {
+                                                        if (targetState!! > initialState!!) {
+                                                            slideInHorizontally { width -> width } + fadeIn() with
+                                                                    slideOutHorizontally { width -> -width } + fadeOut()
+                                                        } else {
+                                                            slideInHorizontally { width -> -width } + fadeIn() with
+                                                                    slideOutHorizontally { width -> width } + fadeOut()
+                                                        }.using(
+                                                            SizeTransform(clip = false)
+                                                        )
+                                                    }
+                                                ) {
+
+                                                    LaunchedEffect(key1 = mediaIndex.value) {
+                                                        if (selectedMedia.value?.duration != null)
+                                                            backToListAction = {
+                                                                exoPlayer?.playWhenReady = false
+                                                                exoPlayer?.stop()
+                                                                customAction?.invoke()
+                                                                mediaIndex.value = null
+                                                                selectedMedia.value = null
+                                                                toolbarVisible.value = true
+                                                                scope.launch { bottomDrawerState.close() }
+                                                            }
+                                                        else
+                                                            backToListAction = {
+                                                                customAction?.invoke()
+                                                                mediaIndex.value = null
+                                                                selectedMedia.value = null
+                                                                toolbarVisible.value = true
+                                                                scope.launch { bottomDrawerState.close() }
+                                                            }
+                                                    }
+
+                                                    if (selectedMedia.value != null) {
+                                                        when (selectedMedia.value?.type) {
+                                                            IMAGE -> {
+                                                                contentResolver.ImageViewerUI(
+                                                                    context = context,
+                                                                    image = selectedMedia.value!!,
+                                                                    onControllerVisibilityChanged = {
+                                                                        toolbarVisible.value = !toolbarVisible.value
+
+                                                                        toolbarVisible.value
+                                                                    },
+                                                                    staticViewer = mediaIndex.value == -1
+                                                                ) { status ->
+
+                                                                    mediaIndex.value =
+                                                                        calculatePossibleIndex(
+                                                                            status,
+                                                                            mediaIndex.value!!
+                                                                        )
+
+                                                                    if (selectedMedia.value?.index != mediaIndex.value)
+                                                                        selectedMedia.value = mediaList.list.find { it.index == mediaIndex.value }
+                                                                }
+                                                            }
+                                                            else -> {
+                                                                VideoViewerUI(
+                                                                    exoPlayer = exoPlayer!!,
+                                                                    uri = selectedMedia.value!!.uri,
+                                                                    onClose = backToListAction,
+                                                                    isToolbarVisible = toolbarVisible,
+                                                                    staticViewer = mediaIndex.value == -1
+                                                                ) { status ->
+
+                                                                    mediaIndex.value =
+                                                                        calculatePossibleIndex(
+                                                                            status,
+                                                                            mediaIndex.value!!
+                                                                        )
+
+                                                                    if (selectedMedia.value?.index != mediaIndex.value)
+                                                                        selectedMedia.value = mediaList.list.find { it.index == mediaIndex.value }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                        }
+
+                                        ToolBarUI(
+                                            visible = ((firstVisibleItemScrollOffset.value == 0) || !lazyGridState.isScrollInProgress || checkBoxVisible.value) && toolbarVisible.value,
+                                            mediaList = mediaList.list,
+                                            staticView = mediaIndex.value == -1,
+                                            mediaDelete = mediaDeleteFlow,
+                                            selectedMedia = selectedMedia,
+                                            checkBoxVisible = checkBoxVisible,
+                                            bottomDrawerValue = bottomDrawerValue,
+                                            bottomDrawerState = bottomDrawerState,
+                                            backgroundColor =
+                                            if (mediaIndex.value == null) {
+                                                if (firstVisibleItemScrollOffset.value == 0) {
+                                                    colorScheme.background
+                                                } else {
+                                                    colorScheme.surface
+                                                }
+                                            }
+                                            else Color.Transparent,
+                                            onPDFClick = onPDFClick,
+                                            backToList = backToListAction
+                                        )
+
+                                        AnimatedVisibility(
+                                            visible = mediaList.busy.value && selectedMedia.value == null,
+                                            enter = scaleIn(),
+                                            exit = scaleOut()
+                                        ) {
+                                            Column(
+                                                modifier = Modifier.fillMaxSize(),
+                                                verticalArrangement = Arrangement.Center,
+                                                horizontalAlignment = Alignment.CenterHorizontally
+                                            ) {
+                                                CircularProgressIndicator(
+                                                    modifier = Modifier
+                                                        .size(40.dp),
+                                                    color = colorScheme.primary
+                                                )
+                                            }
+                                        }
+
+                                        AnimatedVisibility(
+                                            visible = mediaList.list.isEmpty() && !mediaList.busy.value,
+                                            enter = fadeIn(),
+                                            exit = fadeOut()
+                                        ) {
+                                            Column(
+                                                modifier = Modifier
+                                                    .align(Alignment.Center)
+                                                    .fillMaxHeight(),
+                                                verticalArrangement = Arrangement.SpaceEvenly,
+                                                horizontalAlignment = Alignment.CenterHorizontally
+                                            ) {
+                                                Image(
+                                                    modifier = Modifier.padding(16.dp),
+                                                    painter = painterResource(id = R.drawable.ic_empty_pana),
+                                                    contentDescription = stringResource(id = R.string.no_media_found)
+                                                )
+
+                                                TextAuto(id = R.string.no_media_found)
+
+                                                Button(
+                                                    onClick = { cor { updateList.emit(Unit) } },
+                                                    enabled = !mediaList.busy.value
+                                                ) {
+                                                    TextAuto(id = R.string.refresh)
+                                                }
+                                            }
+                                        }
+
+                                        DialogPrintUI(
+                                            status = dialogPrint,
+                                            uri = selectedMedia.value?.uri,
+                                        )
+
+                                        DialogLoadingUI(
+                                            status = dialogLoadingStatus.status,
+                                            text = dialogLoadingStatus.text
+                                        )
+                                    }
+                                }
                             }
                         )
                     }

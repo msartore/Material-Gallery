@@ -62,6 +62,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun Activity.ToolBarUI(
     visible: Boolean,
+    staticView: Boolean,
     mediaList: SnapshotStateList<MediaClass>,
     mediaDelete: MutableSharedFlow<DeleteMediaVars>,
     selectedMedia: MutableState<MediaClass?>,
@@ -129,19 +130,20 @@ fun Activity.ToolBarUI(
                     }
                 }
 
-                Icon(
-                    id = R.drawable.twotone_delete_forever_24,
-                    tint = Color.White
-                ) {
-                    cor {
-                        mediaDelete.emit(
-                            DeleteMediaVars(
-                                listUri = listOf(selectedMedia.value!!.uri),
-                                action = backToList
+                if (!staticView)
+                    Icon(
+                        id = R.drawable.twotone_delete_forever_24,
+                        tint = Color.White
+                    ) {
+                        cor {
+                            mediaDelete.emit(
+                                DeleteMediaVars(
+                                    listUri = listOf(selectedMedia.value!!.uri),
+                                    action = backToList
+                                )
                             )
-                        )
+                        }
                     }
-                }
 
                 Icon(
                     id = R.drawable.round_more_vert_24,
@@ -175,9 +177,8 @@ fun Activity.ToolBarUI(
                             painter = painterResource(id = R.drawable.baseline_photo_camera_24),
                             shadowEnabled = false
                         ) {
-                            if (intentCamera != null) {
+                            if (intentCamera != null)
                                 startActivitySafely(intentCamera)
-                            }
                         }
 
                         Icon(

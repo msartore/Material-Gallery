@@ -1,7 +1,6 @@
 buildscript {
     ext {
-        compose_version = '1.2.0-rc01'
-        accompanist_version = '0.24.1-alpha'
+        compose_version = '1.2.0-rc02'
     }
 }
 plugins {

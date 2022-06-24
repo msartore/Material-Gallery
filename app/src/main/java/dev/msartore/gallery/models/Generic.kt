@@ -53,13 +53,13 @@ class MediaList(
                 Sort.DESC -> list.sortByDescending {
                     when (sortType.value) {
                         SortType.DATE -> it.date
-                        SortType.SIZE -> it.size.toLong()
+                        SortType.SIZE -> it.size?.toLong()
                     }
                 }
                 Sort.ASC -> list.sortBy {
                     when (sortType.value) {
                         SortType.DATE -> it.date
-                        SortType.SIZE -> it.size.toLong()
+                        SortType.SIZE -> it.size?.toLong()
                     }
                 }
             }

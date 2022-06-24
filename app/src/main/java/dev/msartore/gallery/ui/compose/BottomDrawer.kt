@@ -20,7 +20,6 @@ import android.Manifest
 import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
 import androidx.compose.foundation.BorderStroke
@@ -72,7 +71,6 @@ fun CustomBottomDrawer(
     isAboutSectionVisible: MutableState<Boolean>,
     mediaClass: MediaClass?,
     drawerState: BottomDrawerState,
-    onPDFClick: (Uri) -> Unit,
     onImagePrintClick: () -> Unit,
     content: @Composable () -> Unit,
 ) {
@@ -149,7 +147,6 @@ fun CustomBottomDrawer(
                         context = context,
                         mediaClass = mediaClass,
                         contentResolver = contentResolver,
-                        onPDFClick = onPDFClick,
                         onImagePrintClick = onImagePrintClick,
                     )
                     BottomDrawer.Sort -> BottomDrawerSortUI(
@@ -269,7 +266,6 @@ fun BottomDrawerMediaUI(
     context: Context,
     mediaClass: MediaClass?,
     contentResolver: ContentResolver,
-    onPDFClick: (Uri) -> Unit,
     onImagePrintClick: () -> Unit,
 ) {
 
@@ -283,18 +279,13 @@ fun BottomDrawerMediaUI(
                     id = R.drawable.round_launch_24,
                     text = stringResource(id = R.string.use_as)
                 ) {
-                    val intent = Intent(Intent.ACTION_ATTACH_DATA)
-                    intent.addCategory(Intent.CATEGORY_DEFAULT)
-                    intent.setDataAndType(it, "image/jpeg")
-                    intent.putExtra("mimeType", "image/jpeg")
-                    startActivity(context, Intent.createChooser(intent, context.getString(R.string.use_as)), null)
-                }
-
-                CardIcon(
-                    id = R.drawable.baseline_picture_as_pdf_24,
-                    text = stringResource(id = R.string.convert_to_pdf)
-                ) {
-                    onPDFClick(it)
+                    Intent(Intent.ACTION_ATTACH_DATA).apply {
+                        addCategory(Intent.CATEGORY_DEFAULT)
+                        setDataAndType(it, "image/jpeg")
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        putExtra("mimeType", "image/jpeg")
+                        startActivity(context, Intent.createChooser(this, context.getString(R.string.use_as)), null)
+                    }
                 }
 
                 CardIcon(
@@ -347,9 +338,7 @@ fun BottomDrawerMediaUI(
                     )
 
                     Row {
-                        TextAuto(
-                            text = "${"%.2f".format(mediaClass.size / 1048576f)} MB",
-                        )
+                        TextAuto(text = "${"%.2f".format(mediaClass.size?.div(1048576f) ?: 0)} MB")
                     }
                 }
             }
@@ -361,9 +350,7 @@ fun BottomDrawerMediaUI(
                         val uri = MediaStore.setRequireOriginal(it)
                         val stream = contentResolver.openInputStream(uri)
                         val ex = stream?.let { it1 -> ExifInterface(it1) }
-
                         stream?.close()
-
                         ex
                     }
                     else
@@ -388,13 +375,8 @@ fun BottomDrawerMediaUI(
                                 Row(
                                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                                 ) {
-                                    TextAuto(
-                                        text = exif.getAttribute(ExifInterface.TAG_MAKE) ?: "N/A",
-                                    )
-
-                                    TextAuto(
-                                        text = exif.getAttribute(ExifInterface.TAG_MODEL) ?: "N/A",
-                                    )
+                                    TextAuto(text = exif.getAttribute(ExifInterface.TAG_MAKE) ?: "N/A")
+                                    TextAuto(text = exif.getAttribute(ExifInterface.TAG_MODEL) ?: "N/A")
                                 }
 
                                 Spacer(modifier = Modifier.height(12.dp))
@@ -402,15 +384,9 @@ fun BottomDrawerMediaUI(
                                 Row(
                                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                                 ) {
-                                    TextAuto(
-                                        text = "ƒ${exif.getAttribute(ExifInterface.TAG_F_NUMBER) ?: "N/A"}",
-                                    )
-                                    TextAuto(
-                                        text = "${exif.getAttribute(ExifInterface.TAG_FOCAL_LENGTH) ?: "N/A"}mm",
-                                    )
-                                    TextAuto(
-                                        text = "ISO${exif.getAttribute(ExifInterface.TAG_PHOTOGRAPHIC_SENSITIVITY) ?: "N/A"}",
-                                    )
+                                    TextAuto(text = "ƒ${exif.getAttribute(ExifInterface.TAG_F_NUMBER) ?: "N/A"}")
+                                    TextAuto(text = "${exif.getAttribute(ExifInterface.TAG_FOCAL_LENGTH) ?: "N/A"}mm")
+                                    TextAuto(text = "ISO${exif.getAttribute(ExifInterface.TAG_PHOTOGRAPHIC_SENSITIVITY) ?: "N/A"}")
                                 }
                             }
                         }
@@ -421,17 +397,9 @@ fun BottomDrawerMediaUI(
                         Row(
                             horizontalArrangement = Arrangement.SpaceBetween,
                         ) {
-                            TextAuto(
-                                text = exif.getAttribute(ExifInterface.TAG_GPS_LATITUDE) ?: "N/A",
-                            )
-
-                            TextAuto(
-                                text = exif.getAttribute(ExifInterface.TAG_GPS_LONGITUDE) ?: "N/A",
-                            )
-
-                            TextAuto(
-                                text = exif.getAttribute(ExifInterface.TAG_GPS_ALTITUDE) ?: "N/A",
-                            )
+                            TextAuto(text = exif.getAttribute(ExifInterface.TAG_GPS_LATITUDE) ?: "N/A")
+                            TextAuto(text = exif.getAttribute(ExifInterface.TAG_GPS_LONGITUDE) ?: "N/A")
+                            TextAuto(text = exif.getAttribute(ExifInterface.TAG_GPS_ALTITUDE) ?: "N/A")
                         }
                     }
                 }
