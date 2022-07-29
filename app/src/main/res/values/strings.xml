@@ -25,7 +25,7 @@
     <string name="apache_license" translatable="false">"\n\nLicensed under the Apache License, Version 2.0 (the \"License\"); you may not use this file except in compliance with the License. You may obtain a copy of the License at\n\nhttp://www.apache.org/licenses/LICENSE-2.0\n\nUnless required by applicable law or agreed to in writing, software distributed under the License is distributed on an \"AS IS\" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License."</string>
     <string name="exoplayer_title" translatable="false">Exoplayer (video player)</string>
     <string name="exoplayer_descriptionTitle" translatable="false">Copyright 2014 Google, Inc. All rights reserved.</string>
-    <string name="accompanist_title" translatable="false">Accompanist (permission, system ui controller and appcompact theme adapter)</string>
+    <string name="accompanist_title" translatable="false">Accompanist (permission, system ui controller, appcompact theme adapter and placeholder material)</string>
     <string name="accompanist_descriptionTitle" translatable="false">"Copyright 2020 The Android Open Source Project "</string>
     <string name="gallery_description" translatable="false">Copyright © 2022 Massimiliano Sartore\n\nThis program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.\n\nThis program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.\n\nYou should have received a copy of the GNU General Public License along with this program. If not, see https://www.gnu.org/licenses/</string>
     <string name="permission_request">Permission request</string>
@@ -45,4 +45,7 @@
     <string name="fit_content">Fit to paper</string>
     <string name="print">Print</string>
     <string name="scale">Scale</string>
+    <string name="refresh_busy">Please wait until the current operation is finished</string>
+    <string name="edit">Edit</string>
+    <string name="error_uri">Error during media loading, the media might be corrupted</string>
 </resources>

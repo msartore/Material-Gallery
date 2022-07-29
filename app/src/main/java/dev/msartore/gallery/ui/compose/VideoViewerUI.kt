@@ -16,7 +16,7 @@
 
 package dev.msartore.gallery.ui.compose
 
-import android.net.Uri
+import android.media.session.PlaybackState
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
@@ -48,6 +48,7 @@ import com.google.android.exoplayer2.MediaItem
 import com.google.android.exoplayer2.ui.StyledPlayerView
 import dev.msartore.gallery.R
 import dev.msartore.gallery.models.CustomTimer
+import dev.msartore.gallery.models.MediaClass
 import dev.msartore.gallery.models.PlayerEventListener
 import dev.msartore.gallery.ui.compose.basic.Icon
 import dev.msartore.gallery.utils.changeBarsStatus
@@ -60,7 +61,7 @@ import kotlinx.coroutines.withContext
 @Composable
 fun VideoViewerUI(
     exoPlayer: ExoPlayer,
-    uri: Uri,
+    video: MediaClass?,
     onClose: () -> Unit,
     staticViewer: Boolean = false,
     isToolbarVisible: MutableState<Boolean>,
@@ -68,15 +69,12 @@ fun VideoViewerUI(
 ) {
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val systemUiController = rememberSystemUiController()
-    val isLoading = remember { mutableStateOf(true) }
-
-    val videoStatus = remember { mutableStateOf(VideoStatus.STOPPED) }
+    val playbackState = remember { mutableStateOf(PlaybackState.STATE_BUFFERING) }
+    val isPlaying = remember { mutableStateOf<Boolean?>(null) }
     val currentPositionFormatted = remember { mutableStateOf("00:00") }
     val currentPosition = remember { mutableStateOf(0f) }
     val duration = remember { mutableStateOf("00:00") }
-
     val slideMemory = remember { mutableStateListOf<Float>() }
-
     val sliderTheme = remember {
         object: RippleTheme {
             @Composable
@@ -86,14 +84,13 @@ fun VideoViewerUI(
             override fun rippleAlpha(): RippleAlpha = RippleAlpha(0.0f,0.0f,0.0f,0.0f)
         }
     }
-
     val timer = remember {
         CustomTimer(
             period = 50
         ) {
             cor {
                 withContext(Dispatchers.Main) {
-                    if (videoStatus.value == VideoStatus.PLAYING) {
+                    if (isPlaying.value == true) {
                         currentPosition.value = exoPlayer.currentPosition / 1000f
                         currentPositionFormatted.value = transformMillsToFormattedTime(exoPlayer.currentPosition)
                     }
@@ -101,35 +98,25 @@ fun VideoViewerUI(
             }
         }
     }
-
     val listener = remember {
         PlayerEventListener(
-            onPlayerStateChangedL = { playerWhenReady, state ->
+            onPSChanged = { playerWhenReady, state ->
 
                 when (state) {
-                    4 -> {
-                        videoStatus.value = VideoStatus.STOPPED
-                        timer.stop()
-                    }
-                    3 -> {
-                        videoStatus.value = if (playerWhenReady) {
-                            isLoading.value = false
-                            VideoStatus.PLAYING
-                        } else VideoStatus.PAUSED
-                    }
-                    2 -> {
-                        isLoading.value = true
-                        videoStatus.value = VideoStatus.BUFFERING
-                    }
-                    else -> {
+                    PlaybackState.STATE_PLAYING -> {
                         if (playerWhenReady) {
-                            videoStatus.value = VideoStatus.PLAYING
                             timer.start()
+                            isPlaying.value = true
                         }
+                    }
+                    PlaybackState.STATE_PAUSED, PlaybackState.STATE_STOPPED, PlaybackState.STATE_FAST_FORWARDING -> {
+                        isPlaying.value = false
+                        timer.stop()
                     }
                 }
 
-                duration.value =  transformMillsToFormattedTime(exoPlayer.duration)
+                playbackState.value = state
+                duration.value =  transformMillsToFormattedTime(if (exoPlayer.duration >= 0) exoPlayer.duration else 0)
             }
         )
     }
@@ -139,207 +126,208 @@ fun VideoViewerUI(
         onClose()
     }
 
-    LaunchedEffect(key1 = true) {
-        exoPlayer.setMediaItem(MediaItem.fromUri(uri))
-        exoPlayer.prepare()
-    }
+    if (video != null) {
 
-    DisposableEffect(lifecycle) {
-
-        val lifecycleObserver = getLifecycleEventObserver(
-            onResume = {
-                exoPlayer.playWhenReady = true
-                timer.start()
-            },
-            onPause = {
-                exoPlayer.playWhenReady = false
-            },
-            onDestroy = {
-                exoPlayer.release()
-                timer.stop()
-            }
-        )
-
-        exoPlayer.addListener(listener)
-        lifecycle.addObserver(lifecycleObserver)
-
-        onDispose {
-            lifecycle.removeObserver(lifecycleObserver)
+        LaunchedEffect(key1 = true) {
+            exoPlayer.setMediaItem(MediaItem.fromUri(video.uri))
+            exoPlayer.prepare()
         }
-    }
 
-    AndroidView(
-        modifier = Modifier
-            .fillMaxSize()
-            .pointerInput(Unit) {
-                detectTapGestures(
-                    onTap = {
-                        isToolbarVisible.value = !isToolbarVisible.value
-                        systemUiController.changeBarsStatus(isToolbarVisible.value)
+        DisposableEffect(lifecycle) {
+
+            val lifecycleObserver = getLifecycleEventObserver(
+                onResume = {
+                    if (isPlaying.value != false) {
+                        exoPlayer.playWhenReady = true
+                        isPlaying.value = true
+                        timer.start()
                     }
-                )
+                },
+                onPause = {
+                    if (isPlaying.value == true) {
+                        exoPlayer.playWhenReady = false
+                        timer.stop()
+                    }
+                },
+                onDestroy = {
+                    exoPlayer.release()
+                    timer.stop()
+                }
+            )
+
+            exoPlayer.addListener(listener)
+            lifecycle.addObserver(lifecycleObserver)
+
+            onDispose {
+                lifecycle.removeObserver(lifecycleObserver)
             }
-            .pointerInput(Unit) {
-                if (!staticViewer) {
-                    forEachGesture {
-                        detectTransformGestures { centroid, _, _, _ ->
+        }
 
-                            slideMemory.add(centroid.x)
 
-                            if (slideMemory.size == 2) {
 
-                                exoPlayer.playWhenReady = false
-                                exoPlayer.stop()
-                                timer.stop()
-                                systemUiController.changeBarsStatus(true)
+        AndroidView(
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onTap = {
+                            isToolbarVisible.value = !isToolbarVisible.value
+                            systemUiController.changeBarsStatus(isToolbarVisible.value)
+                        }
+                    )
+                }
+                .pointerInput(Unit) {
+                    if (!staticViewer) {
+                        forEachGesture {
+                            detectTransformGestures { centroid, _, _, _ ->
 
-                                when {
-                                    slideMemory[0] < slideMemory[1] ->
-                                        onChangeMedia(ChangeMediaState.Backward)
-                                    slideMemory[0] > slideMemory[1] ->
-                                        onChangeMedia(ChangeMediaState.Forward)
+                                slideMemory.add(centroid.x)
+
+                                if (slideMemory.size == 2) {
+
+                                    exoPlayer.playWhenReady = false
+                                    exoPlayer.stop()
+                                    timer.stop()
+                                    systemUiController.changeBarsStatus(true)
+
+                                    when {
+                                        slideMemory[0] < slideMemory[1] ->
+                                            onChangeMedia(ChangeMediaState.Backward)
+                                        slideMemory[0] > slideMemory[1] ->
+                                            onChangeMedia(ChangeMediaState.Forward)
+                                    }
                                 }
-                            }
 
-                            if (slideMemory.size > 3) {
-                                slideMemory.clear()
+                                if (slideMemory.size > 3) {
+                                    slideMemory.clear()
+                                }
                             }
                         }
                     }
-                }
-            },
-        factory = { context ->
+                },
+            factory = { context ->
 
-            StyledPlayerView(context).apply {
-                player = exoPlayer
-                useController = false
+                StyledPlayerView(context).apply {
+                    player = exoPlayer
+                    useController = false
+                }
+            }
+        )
+
+        AnimatedVisibility(
+            visible = playbackState.value == PlaybackState.STATE_BUFFERING,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier
+                        .size(40.dp),
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
         }
-    )
 
-    AnimatedVisibility(
-        visible = isLoading.value,
-        enter = fadeIn(),
-        exit = fadeOut()
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            CircularProgressIndicator(
-                modifier = Modifier
-                    .size(40.dp),
-                color = MaterialTheme.colorScheme.primary
+        AnimatedVisibility(
+            visible = isToolbarVisible.value,
+            enter = slideInVertically(
+                initialOffsetY = { it },
+                animationSpec = tween(durationMillis = 600)
+            ),
+            exit = slideOutVertically(
+                targetOffsetY = { it },
+                animationSpec = tween(durationMillis = 600)
             )
-        }
-    }
-
-    AnimatedVisibility(
-        visible = isToolbarVisible.value,
-        enter = slideInVertically(
-            initialOffsetY = {it},
-            animationSpec = tween(durationMillis = 600)
-        ),
-        exit = slideOutVertically(
-            targetOffsetY = {it},
-            animationSpec = tween(durationMillis = 600)
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize(),
-            verticalArrangement = Arrangement.Bottom
         ) {
             Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(32.dp)
-                    .background(
-                        color = Color.Black.copy(alpha = 0.5f),
-                        shape = RoundedCornerShape(16.dp)
-                    )
-                    .padding(16.dp)
+                    .fillMaxSize(),
+                verticalArrangement = Arrangement.Bottom
             ) {
-
-                Row(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceEvenly
+                        .padding(32.dp)
+                        .background(
+                            color = Color(red = 0f, green = 0f, blue = 0f, alpha = 0.5f),
+                            shape = RoundedCornerShape(16.dp)
+                        )
+                        .padding(16.dp)
                 ) {
-                    Icon(
-                        id = R.drawable.round_fast_rewind_24,
-                        tint = Color.White
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
-                        exoPlayer.seekBack()
-                    }
-                    Icon(
-                        id = if (videoStatus.value == VideoStatus.PLAYING) R.drawable.round_pause_24 else R.drawable.round_play_arrow_24,
-                        tint = Color.White
-                    ) {
-                        when (videoStatus.value) {
-                            VideoStatus.PLAYING -> {
-                                exoPlayer.playWhenReady = false
-                                videoStatus.value = VideoStatus.PAUSED
+                        Icon(
+                            id = R.drawable.fast_rewind_24px,
+                            tint = Color.White
+                        ) {
+                            exoPlayer.seekBack()
+                        }
+                        Icon(
+                            id = if (isPlaying.value == true) R.drawable.pause_24px else R.drawable.play_arrow_24px,
+                            tint = Color.White
+                        ) {
+                            when {
+                                isPlaying.value == true -> {
+                                    exoPlayer.playWhenReady = false
+                                }
+                                isPlaying.value == false && playbackState.value != PlaybackState.STATE_FAST_FORWARDING -> {
+                                    exoPlayer.playWhenReady = true
+                                }
+                                else -> {
+                                    exoPlayer.seekTo(0)
+                                    exoPlayer.playWhenReady = true
+                                }
                             }
-                            VideoStatus.PAUSED -> {
-                                exoPlayer.playWhenReady = true
-                                videoStatus.value = VideoStatus.PLAYING
-                            }
-                            VideoStatus.STOPPED -> {
-                                exoPlayer.seekTo(0)
-                                videoStatus.value = VideoStatus.STOPPED
-                            }
-                            VideoStatus.BUFFERING -> {
-                                isLoading.value = true
-                            }
+
+                            isPlaying.value = !isPlaying.value!!
+                        }
+                        Icon(
+                            id = R.drawable.fast_forward_24px,
+                            tint = Color.White
+                        ) {
+                            exoPlayer.seekForward()
                         }
                     }
-                    Icon(
-                        id = R.drawable.round_fast_forward_24,
-                        tint = Color.White
-                    ) {
-                        exoPlayer.seekForward()
-                    }
-                }
 
-                Text(
-                    modifier = Modifier.padding(start = 16.dp),
-                    text = "${currentPositionFormatted.value} / ${duration.value}",
-                    color = Color.White
-                )
-
-                CompositionLocalProvider(LocalRippleTheme provides sliderTheme) {
-                    Slider(
-                        value = if (currentPosition.value < 0) 0f else currentPosition.value,
-                        valueRange = 0f..if (exoPlayer.duration < 0) 0f else exoPlayer.duration / 1000f,
-                        onValueChange = {
-                            currentPosition.value = it
-                            exoPlayer.playWhenReady = false
-                        },
-                        onValueChangeFinished = {
-                            exoPlayer.seekTo((currentPosition.value * 1000).toLong())
-                            exoPlayer.playWhenReady = true
-                        },
-                        colors = SliderDefaults.colors(
-                            activeTickColor = Color.Transparent,
-                            inactiveTickColor = Color.Transparent,
-                            inactiveTrackColor = Color.White,
-                            activeTrackColor = MaterialTheme.colorScheme.primary,
-                            thumbColor = MaterialTheme.colorScheme.primary
-                        )
+                    Text(
+                        modifier = Modifier.padding(start = 16.dp),
+                        text = "${currentPositionFormatted.value} / ${duration.value}",
+                        color = Color.White
                     )
+
+                    CompositionLocalProvider(LocalRippleTheme provides sliderTheme) {
+                        Slider(
+                            value = if (currentPosition.value < 0) 0f else currentPosition.value,
+                            valueRange = 0f..if (exoPlayer.duration < 0) 0f else exoPlayer.duration / 1000f,
+                            onValueChange = {
+                                currentPosition.value = it
+                                exoPlayer.playWhenReady = false
+                            },
+                            onValueChangeFinished = {
+                                exoPlayer.seekTo((currentPosition.value * 1000).toLong())
+                                exoPlayer.playWhenReady = true
+                            },
+                            colors = SliderDefaults.colors(
+                                activeTickColor = Color.Transparent,
+                                inactiveTickColor = Color.Transparent,
+                                inactiveTrackColor = Color.White,
+                                activeTrackColor = MaterialTheme.colorScheme.primary,
+                                thumbColor = MaterialTheme.colorScheme.primary
+                            )
+                        )
+                    }
                 }
             }
         }
     }
-}
-
-enum class VideoStatus {
-    BUFFERING,
-    PLAYING,
-    PAUSED,
-    STOPPED,
 }

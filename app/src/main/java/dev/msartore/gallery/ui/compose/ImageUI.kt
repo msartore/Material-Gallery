@@ -30,7 +30,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -45,8 +44,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.accompanist.placeholder.material.placeholder
 import dev.msartore.gallery.R
 import dev.msartore.gallery.models.MediaClass
+import dev.msartore.gallery.models.MediaList
 import dev.msartore.gallery.ui.compose.basic.CheckBox
 import dev.msartore.gallery.ui.compose.basic.Icon
 import dev.msartore.gallery.utils.cor
@@ -60,7 +61,7 @@ import kotlinx.coroutines.withContext
 @Composable
 fun Context.ImageUI(
     media: MediaClass,
-    mediaList: SnapshotStateList<MediaClass>,
+    mediaList: MediaList,
     checkBoxVisible: MutableState<Boolean>,
     action: () -> Unit
 ) {
@@ -81,7 +82,6 @@ fun Context.ImageUI(
                 errorState.value = true
             }
         }
-
         onDispose {
             coroutineScope.cancel()
         }
@@ -105,7 +105,7 @@ fun Context.ImageUI(
                             if (checkBoxVisible.value) {
                                 media.selected.value = !media.selected.value
 
-                                if (!mediaList.any { it.selected.value }) {
+                                if (!mediaList.list.any { it.selected.value }) {
                                     checkBoxVisible.value = false
                                 }
                             } else {
@@ -167,7 +167,7 @@ fun Context.ImageUI(
                         )
                         Icon(
                             modifier = Modifier.size(20.dp),
-                            id = R.drawable.baseline_play_circle_filled_24,
+                            id = R.drawable.play_circle_filled_24px,
                             tint = Color.White
                         )
                     }
@@ -190,7 +190,7 @@ fun Context.ImageUI(
                 modifier = Modifier
                     .width(100.dp)
                     .height(100.dp),
-                id = R.drawable.baseline_broken_image_24,
+                id = R.drawable.broken_image_24px,
                 shadowEnabled = false
             )
         else
@@ -198,7 +198,7 @@ fun Context.ImageUI(
                 modifier = Modifier
                     .width(100.dp)
                     .height(100.dp)
-                    .background(MaterialTheme.colorScheme.onBackground)
+                    .placeholder(visible = true)
             )
     }
 }

@@ -30,7 +30,6 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
 import android.provider.MediaStore.MediaColumns
-import android.util.Log
 import android.util.Size
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.IntentSenderRequest
@@ -38,12 +37,11 @@ import androidx.compose.ui.graphics.asImageBitmap
 import dev.msartore.gallery.models.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.util.*
 
 
-fun ContentResolver.queryImageMediaStore(): List<MediaClass> {
-
-    val imageList = mutableListOf<MediaClass>()
+fun ContentResolver.queryImageMediaStore(
+    list: MutableList<MediaClass>
+) {
 
     val collection =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -94,24 +92,24 @@ fun ContentResolver.queryImageMediaStore(): List<MediaClass> {
                 id
             )
 
-            imageList.add(
-                MediaClass(
-                    uri = contentUri,
-                    name = name,
-                    type = MediaType.IMAGE,
-                    size = size,
-                    date =  if (dateTaken >= dateModified) dateTaken else dateModified
-                )
+            if (list.any { it.uri == contentUri }) continue
+
+            val mediaClass = MediaClass(
+                uri = contentUri,
+                name = name,
+                type = MediaType.IMAGE,
+                size = size,
+                date =  if (dateTaken >= dateModified) dateTaken else dateModified
             )
+
+            list.add(mediaClass)
         }
     }
-
-    return imageList
 }
 
-fun ContentResolver.queryVideoMediaStore(): List<MediaClass> {
-
-    val videoList = mutableListOf<MediaClass>()
+fun ContentResolver.queryVideoMediaStore(
+    list: MutableList<MediaClass>
+) {
 
     val collection =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -165,20 +163,20 @@ fun ContentResolver.queryVideoMediaStore(): List<MediaClass> {
                 id
             )
 
-            videoList.add(
-                MediaClass(
-                    uri = contentUri,
-                    type = MediaType.VIDEO,
-                    name = name,
-                    size = size,
-                    date = if (dateTaken >= dateModified) dateTaken else dateModified,
-                    duration = transformMillsToFormattedTime(duration)
-                )
+            if (list.any { it.uri == contentUri }) continue
+
+            val mediaClass = MediaClass(
+                uri = contentUri,
+                type = MediaType.VIDEO,
+                name = name,
+                size = size,
+                date = if (dateTaken >= dateModified) dateTaken else dateModified,
+                duration = transformMillsToFormattedTime(duration)
             )
+
+            list.add(mediaClass)
         }
     }
-
-    return videoList
 }
 
 fun ContentResolver.getImageSize(image: Uri): Size {
@@ -249,7 +247,7 @@ fun Context.initContentResolver(
 fun Context.unregisterContentResolver(contentObserver: ContentObserver) =
     contentResolver.unregisterContentObserver(contentObserver)
 
-@Suppress("DEPRECATION")
+
 suspend fun ContentResolver.deletePhotoFromExternalStorage(
     uris: List<Uri>,
     intentSenderLauncher: ActivityResultLauncher<IntentSenderRequest>
@@ -268,14 +266,14 @@ suspend fun ContentResolver.deletePhotoFromExternalStorage(
             }
         }
         else {
-            try {
+            runCatching {
                 intentSenderLauncher.launch(
                     IntentSenderRequest.Builder(
                         MediaStore.createDeleteRequest(this@deletePhotoFromExternalStorage, uris).intentSender
                     ).build()
                 )
-            } catch (e: SecurityException) {
-                Log.e("ContentResolver", "SecurityException", e)
+            }.getOrElse {
+                it.printStackTrace()
             }
         }
     }

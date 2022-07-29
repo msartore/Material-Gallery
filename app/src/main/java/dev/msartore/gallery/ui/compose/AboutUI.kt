@@ -282,7 +282,7 @@ fun Activity.AboutUI(
                     Icon(
                         modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp),
                         shadowEnabled = false,
-                        id = R.drawable.round_description_24
+                        id = R.drawable.description_24px
                     )
                     TextAuto(
                         id = R.string.license,
@@ -300,7 +300,7 @@ fun Activity.AboutUI(
                     Icon(
                         modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp),
                         shadowEnabled = false,
-                        id = R.drawable.round_description_24
+                        id = R.drawable.description_24px
                     )
                     TextAuto(
                         id = R.string.third_party_licenses,
@@ -327,7 +327,7 @@ fun Activity.AboutUI(
                     Icon(
                         modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp),
                         shadowEnabled = false,
-                        id = R.drawable.round_draw_24
+                        id = R.drawable.draw_24px
                     )
                     TextAuto(
                         id = R.string.illustrations_credit,
@@ -355,7 +355,7 @@ fun Activity.AboutUI(
                     Icon(
                         modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp),
                         shadowEnabled = false,
-                        id = R.drawable.round_handshake_24
+                        id = R.drawable.handshake_24px
                     )
                     TextAuto(
                         id = R.string.contribute_to_the_project,
@@ -383,7 +383,7 @@ fun Activity.AboutUI(
                     Icon(
                         modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp),
                         shadowEnabled = false,
-                        id = R.drawable.round_volunteer_activism_24
+                        id = R.drawable.volunteer_activism_24px
                     )
                     TextAuto(
                         id = R.string.donate_to_support_the_project,
@@ -411,7 +411,7 @@ fun Activity.AboutUI(
                     Icon(
                         modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp),
                         shadowEnabled = false,
-                        id = R.drawable.round_favorite_24
+                        id = R.drawable.favorite_24px
                     )
                     TextAuto(
                         id = R.string.more_about_me,

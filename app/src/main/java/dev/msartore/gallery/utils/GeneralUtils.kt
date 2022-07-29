@@ -29,17 +29,20 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import android.widget.Toast
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.geometry.Offset
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.print.PrintHelper
 import com.google.accompanist.systemuicontroller.SystemUiController
 import com.google.android.exoplayer2.ExoPlayer
+import dev.msartore.gallery.models.MediaClass
+import dev.msartore.gallery.ui.compose.ChangeMediaState
 import java.text.DateFormat
 import java.util.*
 import kotlin.math.abs
 import kotlin.math.roundToInt
-
 
 fun checkCameraHardware(context: Context) =
     context.packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)
@@ -68,6 +71,7 @@ fun checkIfNewTransitionIsNearest(
     return newDifferenceY < differenceY && newDifferenceX <= differenceX || newDifferenceX < differenceX && newDifferenceY <= differenceY
 }
 
+@Suppress("DEPRECATION")
 fun Context.vibrate(
     amplitude: Int = 255,
     duration: Long = 10
@@ -160,5 +164,36 @@ fun Activity.doPhotoPrint(
         }.also { printHelper ->
             printHelper.printBitmap("Image print", bitmap)
         }
+    }
+}
+
+fun MutableState<Int?>.calculatePossibleIndex(
+    status: ChangeMediaState,
+    size: Int
+) {
+
+    val index = value!!
+
+    value =
+        if (status == ChangeMediaState.Forward)
+            if (index + 1 in 0 until size)
+                index + 1
+            else
+                index
+        else
+            if (index - 1 in 0 until size)
+                index - 1
+            else
+                index
+}
+
+fun SnapshotStateList<MediaClass>.mergeList(list: List<MediaClass>) {
+
+    this.removeAll(
+        filterNot { list.contains(it) }
+    )
+
+    list.minus(this.toSet()).forEach {
+        this.add(it)
     }
 }

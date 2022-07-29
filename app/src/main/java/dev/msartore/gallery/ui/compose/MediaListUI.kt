@@ -26,16 +26,16 @@ import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.unit.dp
 import dev.msartore.gallery.models.MediaClass
+import dev.msartore.gallery.models.MediaList
 
 @RequiresApi(Build.VERSION_CODES.Q)
 @Composable
 fun Context.MediaListUI(
     checkBoxVisible: MutableState<Boolean>,
     lazyGridState: LazyGridState,
-    mediaList: SnapshotStateList<MediaClass>,
+    mediaList: MediaList,
     onClickImage: (MediaClass) -> Unit
 ) {
     LazyVerticalGrid(
@@ -43,17 +43,20 @@ fun Context.MediaListUI(
         state = lazyGridState,
         verticalArrangement = Arrangement.spacedBy(3.dp),
         horizontalArrangement = Arrangement.spacedBy(3.dp),
-        columns = GridCells.Adaptive(80.dp),
-        content = {
-            items(mediaList.size){ index ->
-                ImageUI(
-                    media = mediaList[index],
-                    checkBoxVisible = checkBoxVisible,
-                    mediaList = mediaList,
-                ) {
-                    onClickImage(mediaList[index])
-                }
+        columns = GridCells.Adaptive(80.dp)
+    ) {
+        items(mediaList.list.size) { index ->
+            ImageUI(
+                media = mediaList.list[index],
+                checkBoxVisible = checkBoxVisible,
+                mediaList = mediaList,
+            ) {
+                mediaList.list[index].index = index
+
+                onClickImage(
+                    mediaList.list[index]
+                )
             }
         }
-    )
+    }
 }

@@ -50,6 +50,7 @@ import dev.msartore.gallery.MainActivity.BasicInfo.isDarkTheme
 import dev.msartore.gallery.R
 import dev.msartore.gallery.models.MediaClass
 import dev.msartore.gallery.models.MediaList
+import dev.msartore.gallery.models.MediaType
 import dev.msartore.gallery.ui.compose.basic.CardIcon
 import dev.msartore.gallery.ui.compose.basic.Icon
 import dev.msartore.gallery.ui.compose.basic.RadioButton
@@ -69,8 +70,10 @@ fun CustomBottomDrawer(
     mediaList: MediaList,
     bottomDrawerValue: MutableState<BottomDrawer>,
     isAboutSectionVisible: MutableState<Boolean>,
+    onRefresh: () -> Unit,
     mediaClass: MediaClass?,
     drawerState: BottomDrawerState,
+    onEditClick: () -> Unit,
     onImagePrintClick: () -> Unit,
     content: @Composable () -> Unit,
 ) {
@@ -148,12 +151,14 @@ fun CustomBottomDrawer(
                         mediaClass = mediaClass,
                         contentResolver = contentResolver,
                         onImagePrintClick = onImagePrintClick,
+                        onEditClick = onEditClick
                     )
                     BottomDrawer.Sort -> BottomDrawerSortUI(
                         mediaList = mediaList
                     )
                     BottomDrawer.General -> BottomDrawerGeneralUI(
-                        isAboutSectionVisible = isAboutSectionVisible
+                        isAboutSectionVisible = isAboutSectionVisible,
+                        onRefresh = onRefresh
                     )
                 }
             }
@@ -164,13 +169,23 @@ fun CustomBottomDrawer(
 @Composable
 fun BottomDrawerGeneralUI(
     isAboutSectionVisible: MutableState<Boolean>,
+    onRefresh: () -> Unit,
 ) {
 
-    CardIcon(
-        id = R.drawable.round_info_24,
-        text = stringResource(id = R.string.about)
-    ) {
-        isAboutSectionVisible.value = true
+    Row {
+        CardIcon(
+            id = R.drawable.info_24px,
+            text = stringResource(id = R.string.about)
+        ) {
+            isAboutSectionVisible.value = true
+        }
+
+        CardIcon(
+            id = R.drawable.round_refresh_24,
+            text = stringResource(id = R.string.refresh)
+        ) {
+            onRefresh()
+        }
     }
 }
 
@@ -204,60 +219,56 @@ fun BottomDrawerSortUI(
         RadioButton(
             text = stringResource(id = R.string.date),
             selected = radioButtonDate,
-            onClick = {
-                radioButtonSize.value = false
-                radioButtonDate.value = true
-                scope.launch {
-                    mediaList.changeSort(sortType = MediaList.SortType.DATE)
-                    radioButtonSize.value = mediaList.sortType.value == MediaList.SortType.SIZE
-                    radioButtonDate.value = mediaList.sortType.value == MediaList.SortType.DATE
-                }
+        ) {
+            radioButtonSize.value = false
+            radioButtonDate.value = true
+            scope.launch {
+                mediaList.changeSort(sortType = MediaList.SortType.DATE)
+                radioButtonSize.value = mediaList.sortType.value == MediaList.SortType.SIZE
+                radioButtonDate.value = mediaList.sortType.value == MediaList.SortType.DATE
             }
-        )
+        }
 
         RadioButton(
             text = stringResource(id = R.string.size),
             selected = radioButtonSize,
-            onClick = {
-                radioButtonDate.value = false
-                radioButtonSize.value = true
-                scope.launch {
-                    mediaList.changeSort(sortType = MediaList.SortType.SIZE)
-                    radioButtonSize.value = mediaList.sortType.value == MediaList.SortType.SIZE
-                    radioButtonDate.value = mediaList.sortType.value == MediaList.SortType.DATE
-                }
+        ) {
+            radioButtonDate.value = false
+            radioButtonSize.value = true
+            scope.launch {
+                mediaList.changeSort(sortType = MediaList.SortType.SIZE)
+                radioButtonSize.value = mediaList.sortType.value == MediaList.SortType.SIZE
+                radioButtonDate.value = mediaList.sortType.value == MediaList.SortType.DATE
             }
-        )
+        }
 
         Divider()
 
         RadioButton(
             text = stringResource(id = R.string.ascending),
-            selected = radioButtonAsc,
-            onClick = {
-                radioButtonDesc.value = false
-                radioButtonAsc.value = true
-                scope.launch {
-                    mediaList.changeSort(MediaList.Sort.ASC)
-                    radioButtonAsc.value = mediaList.sort.value == MediaList.Sort.ASC
-                    radioButtonDesc.value = mediaList.sort.value == MediaList.Sort.DESC
-                }
+            selected = radioButtonAsc
+        ) {
+            radioButtonDesc.value = false
+            radioButtonAsc.value = true
+            scope.launch {
+                mediaList.changeSort(MediaList.Sort.ASC)
+                radioButtonAsc.value = mediaList.sortOrder.value == MediaList.Sort.ASC
+                radioButtonDesc.value = mediaList.sortOrder.value == MediaList.Sort.DESC
             }
-        )
+        }
 
         RadioButton(
             text = stringResource(id = R.string.descending),
-            selected = radioButtonDesc,
-            onClick = {
-                radioButtonAsc.value = false
-                radioButtonDesc.value = true
-                scope.launch {
-                    mediaList.changeSort(MediaList.Sort.DESC)
-                    radioButtonDesc.value = mediaList.sort.value == MediaList.Sort.DESC
-                    radioButtonAsc.value = mediaList.sort.value == MediaList.Sort.ASC
-                }
+            selected = radioButtonDesc
+        ) {
+            radioButtonAsc.value = false
+            radioButtonDesc.value = true
+            scope.launch {
+                mediaList.changeSort(MediaList.Sort.DESC)
+                radioButtonDesc.value = mediaList.sortOrder.value == MediaList.Sort.DESC
+                radioButtonAsc.value = mediaList.sortOrder.value == MediaList.Sort.ASC
             }
-        )
+        }
     }
 }
 
@@ -267,13 +278,14 @@ fun BottomDrawerMediaUI(
     mediaClass: MediaClass?,
     contentResolver: ContentResolver,
     onImagePrintClick: () -> Unit,
+    onEditClick: () -> Unit,
 ) {
-
-    val video = mediaClass?.duration != null
 
     mediaClass?.uri?.let {
 
-        if (mediaClass.duration == null) {
+        val pPath = contentResolver.getPath(it)
+
+        if (mediaClass.type == MediaType.IMAGE) {
             Row {
                 CardIcon(
                     id = R.drawable.round_launch_24,
@@ -289,19 +301,29 @@ fun BottomDrawerMediaUI(
                 }
 
                 CardIcon(
-                    id = R.drawable.baseline_print_24,
+                    id = R.drawable.tune_24px,
+                    text = stringResource(id = R.string.edit)
+                ) {
+                    onEditClick()
+                }
+
+                CardIcon(
+                    id = R.drawable.print_24px,
                     text = stringResource(id = R.string.print_photo)
                 ) {
                     onImagePrintClick()
                 }
             }
 
-            Divider()
+            if (!pPath.isNullOrEmpty()) {
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Divider()
+
+                Spacer(modifier = Modifier.height(16.dp))
+            }
         }
 
-        contentResolver.getPath(it)?.let { path ->
+        pPath?.let { path ->
 
             TextAuto(
                 text = getDateInstance().format(mediaClass.date) + " " + DateFormat.getTimeInstance()
@@ -328,7 +350,7 @@ fun BottomDrawerMediaUI(
                     modifier = Modifier
                         .size(32.dp)
                         .weight(1f),
-                    id = R.drawable.round_image_24,
+                    id = R.drawable.image_24px,
                 )
 
                 Column(Modifier.weight(5f)) {
@@ -358,7 +380,7 @@ fun BottomDrawerMediaUI(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                if (!video) {
+                if (mediaClass.type == MediaType.IMAGE) {
                     if (exif?.getAttribute(ExifInterface.TAG_EXPOSURE_TIME) != null) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -368,7 +390,7 @@ fun BottomDrawerMediaUI(
                                 modifier = Modifier
                                     .weight(1f)
                                     .size(32.dp),
-                                id = R.drawable.round_camera_24
+                                id = R.drawable.camera_24px
                             )
 
                             Column(Modifier.weight(5f)) {

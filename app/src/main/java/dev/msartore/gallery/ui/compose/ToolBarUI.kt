@@ -50,6 +50,7 @@ import dev.msartore.gallery.MainActivity.BasicInfo.isDarkTheme
 import dev.msartore.gallery.R
 import dev.msartore.gallery.models.DeleteMediaVars
 import dev.msartore.gallery.models.MediaClass
+import dev.msartore.gallery.models.MediaType
 import dev.msartore.gallery.ui.compose.basic.Icon
 import dev.msartore.gallery.utils.checkCameraHardware
 import dev.msartore.gallery.utils.cor
@@ -122,7 +123,7 @@ fun Activity.ToolBarUI(
                     }
 
                 Icon(
-                    id = R.drawable.baseline_share_24,
+                    id = R.drawable.share_24px,
                     tint = Color.White
                 ) {
                     selectedMedia.value?.uri?.let {
@@ -132,7 +133,7 @@ fun Activity.ToolBarUI(
 
                 if (!staticView)
                     Icon(
-                        id = R.drawable.twotone_delete_forever_24,
+                        id = R.drawable.delete_forever_24px,
                         tint = Color.White
                     ) {
                         cor {
@@ -146,7 +147,7 @@ fun Activity.ToolBarUI(
                     }
 
                 Icon(
-                    id = R.drawable.round_more_vert_24,
+                    id = R.drawable.more_vert_24px,
                     tint = Color.White
                 ) {
                     scope.launch {
@@ -174,7 +175,7 @@ fun Activity.ToolBarUI(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Icon(
-                            painter = painterResource(id = R.drawable.baseline_photo_camera_24),
+                            painter = painterResource(id = R.drawable.photo_camera_24px),
                             shadowEnabled = false
                         ) {
                             if (intentCamera != null)
@@ -192,7 +193,7 @@ fun Activity.ToolBarUI(
                         }
 
                         Icon(
-                            id = R.drawable.round_more_vert_24,
+                            id = R.drawable.more_vert_24px,
                             shadowEnabled = false
                         ) {
                             scope.launch {
@@ -220,17 +221,17 @@ fun Activity.ToolBarUI(
                         checkBoxVisible.value = false
                     }
 
-                    if (!mediaList.any { it.selected.value && it.duration != null })
+                    if (!mediaList.any { it.selected.value && it.type == MediaType.IMAGE })
                         Icon(
                             shadowEnabled = false,
-                            id = R.drawable.baseline_picture_as_pdf_24
+                            id = R.drawable.picture_as_pdf_24px
                         ) {
                             onPDFClick()
                         }
 
                     Icon(
                         shadowEnabled = false,
-                        painter = painterResource(id = R.drawable.baseline_share_24)
+                        painter = painterResource(id = R.drawable.share_24px)
                     ) {
                         val selectedImageList = mediaList.filter { it.selected.value }
 
@@ -246,7 +247,7 @@ fun Activity.ToolBarUI(
 
                     Icon(
                         shadowEnabled = false,
-                        id = R.drawable.twotone_delete_forever_24,
+                        id = R.drawable.delete_forever_24px,
                     ) {
                         val selectedImageList = mediaList.filter { it.selected.value }
 

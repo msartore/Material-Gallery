@@ -51,138 +51,141 @@ import kotlinx.coroutines.withContext
 @Composable
 fun ContentResolver.ImageViewerUI(
     context: Context,
-    image: MediaClass,
+    image: MediaClass?,
     staticViewer: Boolean = false,
     onControllerVisibilityChanged: () -> Boolean,
     changeMedia: (ChangeMediaState) -> Unit,
 ) {
 
-    val thumbnail = remember { mutableStateOf<ImageBitmap?>(null) }
-    val scale = remember { mutableStateOf(1f) }
-    val translate = remember { mutableStateOf(Offset(0f, 0f)) }
-    val rotation = remember { mutableStateOf(0f) }
-    val imageSize = remember { getImageSize(image = image.uri)}
-    val systemUiController = rememberSystemUiController()
-    val slideMemory = remember { mutableStateListOf<Float>() }
+    if (image != null) {
 
-    LaunchedEffect(key1 = true) {
-        withContext(Dispatchers.IO) {
-            thumbnail.value =
-                Glide
-                    .with(context)
-                    .asBitmap()
-                    .load(image.uri)
-                    .submit()
-                    .get()
-                    .asImageBitmap()
-        }
+        val thumbnail = remember { mutableStateOf<ImageBitmap?>(null) }
+        val scale = remember { mutableStateOf(1f) }
+        val translate = remember { mutableStateOf(Offset(0f, 0f)) }
+        val rotation = remember { mutableStateOf(0f) }
+        val imageSize = remember { getImageSize(image = image.uri)}
+        val systemUiController = rememberSystemUiController()
+        val slideMemory = remember { mutableStateListOf<Float>() }
 
-        image.actionReset = {
-            image.imageTransform.value = false
-            scale.value = 1f
-            translate.value = Offset(0f, 0f)
-            rotation.value = 0f
-        }
-    }
-
-    Box(
-        modifier = Modifier
-            .clip(RectangleShape)
-            .fillMaxSize()
-            .pointerInput(Unit) {
-                detectTapGestures(
-                    onTap = {
-                        systemUiController.changeBarsStatus(onControllerVisibilityChanged())
-                    },
-                    onDoubleTap = {
-                        if (rotation.value != 0f || scale.value != 1f) {
-                            image.actionReset()
-                        }
-                    }
-                )
+        LaunchedEffect(key1 = true) {
+            withContext(Dispatchers.IO) {
+                thumbnail.value =
+                    Glide
+                        .with(context)
+                        .asBitmap()
+                        .load(image.uri)
+                        .submit()
+                        .get()
+                        .asImageBitmap()
             }
-            .pointerInput(Unit) {
-                forEachGesture {
-                    detectTransformGestures { centroid, pan, zoom, rot ->
 
-                        val maxX = imageSize.width * (scale.value - 1) / 2
-                        val maxY = imageSize.height * (scale.value - 1) / 2
-                        val translateTest = translate.value + pan
+            image.actionReset = {
+                image.imageTransform.value = false
+                scale.value = 1f
+                translate.value = Offset(0f, 0f)
+                rotation.value = 0f
+            }
+        }
 
-                        if (
-                            translateTest.x in -maxX..maxX &&
-                            translateTest.y in -maxY..maxY ||
-                            checkIfNewTransitionIsNearest(
-                                maxX = maxX,
-                                maxY = maxY,
-                                oldTransition = translate.value,
-                                newTransition = translateTest
-                            )
-                        ) {
-                            translate.value += pan
+        Box(
+            modifier = Modifier
+                .clip(RectangleShape)
+                .fillMaxSize()
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onTap = {
+                            systemUiController.changeBarsStatus(onControllerVisibilityChanged())
+                        },
+                        onDoubleTap = {
+                            if (rotation.value != 0f || scale.value != 1f) {
+                                image.actionReset()
+                            }
                         }
+                    )
+                }
+                .pointerInput(Unit) {
+                    forEachGesture {
+                        detectTransformGestures { centroid, pan, zoom, rot ->
 
-                        val newScale = scale.value * zoom
+                            val maxX = imageSize.width * (scale.value - 1) / 2
+                            val maxY = imageSize.height * (scale.value - 1) / 2
+                            val translateTest = translate.value + pan
 
-                        if (newScale < scale.value) {
-                            translate.value = translate.value * (newScale / scale.value)
-                        }
-
-                        if (newScale in 1f..15f) {
-                            scale.value = newScale
-                        }
-
-                        rotation.value += rot
-
-                        if (rotation.value != 0f || scale.value != 1f) {
-                            image.imageTransform.value = true
-                        }
-                        else if (!staticViewer) {
-                            slideMemory.add(centroid.x)
-
-                            if (slideMemory.size == 2) {
-
-                                when {
-                                    slideMemory[0] < slideMemory[1] -> {
-                                        changeMedia(ChangeMediaState.Backward)
-                                    }
-                                    slideMemory[0] > slideMemory[1] -> {
-                                        changeMedia(ChangeMediaState.Forward)
-                                    }
-                                }
+                            if (
+                                translateTest.x in -maxX..maxX &&
+                                translateTest.y in -maxY..maxY ||
+                                checkIfNewTransitionIsNearest(
+                                    maxX = maxX,
+                                    maxY = maxY,
+                                    oldTransition = translate.value,
+                                    newTransition = translateTest
+                                )
+                            ) {
+                                translate.value += pan
                             }
 
-                            if (slideMemory.size > 3) {
-                                slideMemory.clear()
+                            val newScale = scale.value * zoom
+
+                            if (newScale < scale.value) {
+                                translate.value = translate.value * (newScale / scale.value)
+                            }
+
+                            if (newScale in 1f..15f) {
+                                scale.value = newScale
+                            }
+
+                            rotation.value += rot
+
+                            if (rotation.value != 0f || scale.value != 1f) {
+                                image.imageTransform.value = true
+                            }
+                            else if (!staticViewer) {
+                                slideMemory.add(centroid.x)
+
+                                if (slideMemory.size == 2) {
+
+                                    when {
+                                        slideMemory[0] < slideMemory[1] -> {
+                                            changeMedia(ChangeMediaState.Backward)
+                                        }
+                                        slideMemory[0] > slideMemory[1] -> {
+                                            changeMedia(ChangeMediaState.Forward)
+                                        }
+                                    }
+                                }
+
+                                if (slideMemory.size > 3) {
+                                    slideMemory.clear()
+                                }
                             }
                         }
                     }
                 }
-            }
-    ) {
-        if (thumbnail.value != null)
-            Image(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .align(Alignment.Center)
-                    .graphicsLayer(
-                        scaleX = maxOf(1f, minOf(15f, scale.value)),
-                        scaleY = maxOf(1f, minOf(15f, scale.value)),
-                        translationX = translate.value.x,
-                        translationY = translate.value.y,
-                        rotationZ = rotation.value
-                    ),
-                bitmap = thumbnail.value!!,
-                contentDescription = null,
-                contentScale = ContentScale.Fit,
-            )
-        else
-            CircularProgressIndicator(
-                modifier = Modifier
-                    .size(40.dp)
-                    .align(Alignment.Center),
-                color = MaterialTheme.colorScheme.primary
-            )
+        ) {
+            if (thumbnail.value != null)
+                Image(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .align(Alignment.Center)
+                        .graphicsLayer(
+                            scaleX = maxOf(1f, minOf(15f, scale.value)),
+                            scaleY = maxOf(1f, minOf(15f, scale.value)),
+                            translationX = translate.value.x,
+                            translationY = translate.value.y,
+                            rotationZ = rotation.value
+                        ),
+                    bitmap = thumbnail.value!!,
+                    contentDescription = null,
+                    contentScale = ContentScale.Fit,
+                )
+            else
+                CircularProgressIndicator(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .align(Alignment.Center),
+                    color = MaterialTheme.colorScheme.primary
+                )
+        }
     }
 }
 

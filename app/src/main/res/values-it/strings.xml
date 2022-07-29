@@ -3,7 +3,7 @@
     <string name="app_name">Galleria</string>
     <string name="no_media_found">Nessun media trovato!</string>
     <string name="refresh">Aggiorna</string>
-    <string name="please_wait">Si prega d\'attendere…</string>
+    <string name="please_wait">Si prega di attendere…</string>
     <string name="sort_by">Ordina per</string>
     <string name="date">Data</string>
     <string name="size">Dimensione</string>
@@ -36,4 +36,6 @@
     <string name="fill_content">Adatta all\'area stampabile</string>
     <string name="print_photo">Stampa foto</string>
     <string name="scale">Scala</string>
+    <string name="refresh_busy">Si prega di attendere fino al termine dell\'operazione in corso</string>
+    <string name="edit">Modifica</string>
 </resources>

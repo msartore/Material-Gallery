@@ -19,12 +19,7 @@ package dev.msartore.gallery.models
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
-import com.google.android.exoplayer2.ExoPlaybackException
-import com.google.android.exoplayer2.PlaybackParameters
 import com.google.android.exoplayer2.Player
-import com.google.android.exoplayer2.Timeline
-import com.google.android.exoplayer2.source.TrackGroupArray
-import com.google.android.exoplayer2.trackselection.TrackSelectionArray
 import kotlinx.coroutines.delay
 import java.util.*
 import kotlin.concurrent.fixedRateTimer
@@ -36,55 +31,58 @@ data class LoadingStatus(
 )
 
 class MediaList(
-    val sort: MutableState<Sort> = mutableStateOf(Sort.DESC),
+    val sortOrder: MutableState<Sort> = mutableStateOf(Sort.DESC),
     val sortType: MutableState<SortType> = mutableStateOf(SortType.DATE),
 ) {
 
     val list: SnapshotStateList<MediaClass> = SnapshotStateList()
     val busy: MutableState<Boolean> = mutableStateOf(true)
 
-    suspend fun sort(highLevelRequest: Boolean = false) {
+    fun sort() {
 
-        if (!busy.value || highLevelRequest) {
-
-            busy.value = true
-
-            when (sort.value) {
-                Sort.DESC -> list.sortByDescending {
-                    when (sortType.value) {
-                        SortType.DATE -> it.date
-                        SortType.SIZE -> it.size?.toLong()
-                    }
-                }
-                Sort.ASC -> list.sortBy {
-                    when (sortType.value) {
-                        SortType.DATE -> it.date
-                        SortType.SIZE -> it.size?.toLong()
-                    }
+        when (sortOrder.value) {
+            Sort.DESC -> list.sortByDescending {
+                when (sortType.value) {
+                    SortType.DATE -> it.date
+                    SortType.SIZE -> it.size?.toLong()
                 }
             }
-
-            list.forEachIndexed { index, mediaClass ->
-                mediaClass.index = index
-            }
-
-            delay(10)
-
-            if (!highLevelRequest) {
-                busy.value = false
+            Sort.ASC -> list.sortBy {
+                when (sortType.value) {
+                    SortType.DATE -> it.date
+                    SortType.SIZE -> it.size?.toLong()
+                }
             }
         }
     }
 
     suspend fun changeSort(
-        sort: Sort = this.sort.value,
+        sort: Sort = this.sortOrder.value,
         sortType: SortType = this.sortType.value
     ) {
 
         if (!busy.value) {
-            this.sort.value = sort
-            this.sortType.value = sortType
-            sort()
+
+            busy.value = true
+
+            var sortNeeded = false
+
+            if (sort != this.sortOrder.value) {
+                this.sortOrder.value = sort
+                sortNeeded = true
+            }
+            if (sortType != this.sortType.value) {
+                this.sortType.value = sortType
+                sortNeeded = true
+            }
+
+            if (sortNeeded) {
+                sort()
+            }
+
+            delay(10)
+
+            busy.value = false
         }
     }
 
@@ -122,42 +120,10 @@ class CustomTimer(
 }
 
 class PlayerEventListener(
-    val onTimeLineChanged: (timeline: Timeline?, manifest: Any?) -> Unit = { _, _ -> },
-    val onPlayerStateChangedL: (playWhenReady: Boolean, playbackState: Int) -> Unit = { _, _ -> },
-    val onPlayerErrorL: (error: ExoPlaybackException?) -> Unit = {},
-    val onLoadingStatusChanged: (isLoading: Boolean) -> Unit = {},
-    val onPlaybackParametersChangedL: (playbackParameters: PlaybackParameters) -> Unit = {},
-    val onTrackChanged: (trackGroups: TrackGroupArray, trackSelections: TrackSelectionArray) -> Unit = { _, _ -> },
-    val onDiscontinuity: () -> Unit = {},
+    val onPSChanged: (playWhenReady: Boolean, playbackState: Int) -> Unit = { _, _ -> },
 ) : Player.Listener {
-    fun onTracksChanged(
-        trackGroups: TrackGroupArray,
-        trackSelections: TrackSelectionArray
-    ) {
-        onTrackChanged(trackGroups, trackSelections)
-    }
 
-    override fun onLoadingChanged(isLoading: Boolean) {
-        onLoadingStatusChanged(isLoading)
-    }
-
-    override fun onPlaybackParametersChanged(playbackParameters: PlaybackParameters) {
-        onPlaybackParametersChangedL(playbackParameters)
-    }
-
-    override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
-        onPlayerStateChangedL(playWhenReady, playbackState)
-    }
-
-    fun onTimelineChanged(timeline: Timeline?, manifest: Any?) {
-        onTimeLineChanged(timeline, manifest)
-    }
-
-    fun onPlayerError(error: ExoPlaybackException?) {
-        onPlayerErrorL(error)
-    }
-
-    fun onPositionDiscontinuity() {
-        onDiscontinuity()
+    override fun onPlaybackStateChanged(playbackState: Int) {
+        onPSChanged(true, playbackState)
     }
 }
