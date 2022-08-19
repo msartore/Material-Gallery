@@ -16,7 +16,6 @@
 
 package dev.msartore.gallery.ui.compose
 
-import android.os.Build
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,10 +36,7 @@ fun FileAndMediaPermission(
 ) {
 
     fileAndMediaPermissionState?.let { mPermissionState ->
-        if (mPermissionState.allPermissionsGranted ||
-            mPermissionState.revokedPermissions.size == 1 &&
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
-        )
+        if (mPermissionState.allPermissionsGranted)
             onPermissionGranted()
         else {
             val dialogStatus = remember { mutableStateOf(true) }

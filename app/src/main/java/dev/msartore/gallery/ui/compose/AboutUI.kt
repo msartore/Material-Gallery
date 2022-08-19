@@ -18,7 +18,9 @@ package dev.msartore.gallery.ui.compose
 
 import android.app.Activity
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.*
@@ -54,9 +56,14 @@ fun Activity.AboutUI(
     val isThirdPartyLicenseVisible = remember { mutableStateOf(false) }
     val isLicenseVisible = remember { mutableStateOf(false) }
     val context = LocalContext.current
-    val manager = packageManager
-    val info = manager.getPackageInfo(packageName, 0)
     val intent = remember { Intent(Intent.ACTION_VIEW) }
+    val info =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            packageManager.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0L))
+        } else {
+            @Suppress("DEPRECATION")
+            packageManager.getPackageInfo(packageName, 0)
+        }
 
     Column(
         modifier = Modifier
@@ -95,15 +102,9 @@ fun Activity.AboutUI(
 
             TextAuto(
                 id = when {
-                    isThirdPartyLicenseVisible.value -> {
-                        R.string.third_party_licenses
-                    }
-                    isLicenseVisible.value -> {
-                        R.string.license
-                    }
-                    else -> {
-                        R.string.about
-                    }
+                    isThirdPartyLicenseVisible.value -> R.string.third_party_licenses
+                    isLicenseVisible.value -> R.string.license
+                    else -> R.string.about
                 },
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,

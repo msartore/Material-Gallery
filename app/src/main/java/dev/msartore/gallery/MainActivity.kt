@@ -16,7 +16,6 @@
 
 package dev.msartore.gallery
 
-import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.database.ContentObserver
@@ -47,6 +46,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.google.accompanist.pager.ExperimentalPagerApi
+import com.google.accompanist.pager.HorizontalPager
+import com.google.accompanist.pager.rememberPagerState
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.MultiplePermissionsState
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
@@ -147,17 +149,18 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-    @OptIn(ExperimentalPermissionsApi::class)
+    @OptIn(ExperimentalPermissionsApi::class, ExperimentalPagerApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
 
         super.onCreate(savedInstanceState)
 
         val context = this
         var fileAndMediaPermissionState: MultiplePermissionsState? = null
-        var customAction: (() -> Unit)? = null
-        val mediaIndex = mutableStateOf<Int?>(null)
+        val staticMedia = mutableStateOf(false)
         val selectedMedia = mutableStateOf<MediaClass?>(null)
+        val singleMediaVisibility = mutableStateOf(false)
         val mediaDeleteFlow = MutableSharedFlow<DeleteMediaVars>()
+        var customAction: (() -> Unit)? = null
         var backToListAction = {}
         val getContent = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
             fileAndMediaPermissionState?.allPermissionsGranted?.let {
@@ -166,8 +169,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-        val sIntent = intent
-        val action = sIntent.action
         val intentSettings = Intent(
             Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
             Uri.fromParts("package", packageName, null)
@@ -197,10 +198,10 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        if (Intent.ACTION_VIEW == action) {
+        if (intent.action == Intent.ACTION_VIEW) {
 
-            sIntent.data?.let { uri ->
-                sIntent.type?.let { type ->
+            intent.data?.let { uri ->
+                intent.type?.let { type ->
                     selectedMedia.value = MediaClass(
                         uri = uri,
                         type = when {
@@ -209,7 +210,8 @@ class MainActivity : ComponentActivity() {
                         }
                     )
 
-                    mediaIndex.value = -1
+                    staticMedia.value = true
+                    singleMediaVisibility.value = true
 
                     customAction = {
                         finishAffinity()
@@ -218,27 +220,28 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        cor {
-            updateList.collect {
+        if (!staticMedia.value)
+            cor {
+                updateList.collect {
 
-                cor {
-                    mediaList.busy.value = true
+                    cor {
+                        mediaList.busy.value = true
 
-                    val list = mutableListOf<MediaClass>()
+                        val list = mutableListOf<MediaClass>()
 
-                    contentResolver.queryImageMediaStore(list)
-                    contentResolver.queryVideoMediaStore(list)
+                        contentResolver.queryImageMediaStore(list)
+                        contentResolver.queryVideoMediaStore(list)
 
-                    mediaList.list.mergeList(list)
+                        mediaList.list.mergeList(list)
 
-                    mediaList.sort()
+                        mediaList.sort()
 
-                    delay(10)
+                        delay(10)
 
-                    mediaList.busy.value = false
+                        mediaList.busy.value = false
+                    }
                 }
             }
-        }
 
         cor {
             exoPlayer = getExoPlayer(context)
@@ -257,8 +260,9 @@ class MainActivity : ComponentActivity() {
             val bottomDrawerValue = remember { mutableStateOf(BottomDrawer.Sort)}
             val dialogPrint = remember { mutableStateOf(false) }
             val firstVisibleItemScrollOffset = remember { derivedStateOf { lazyGridState.firstVisibleItemScrollOffset } }
+            val statePager = rememberPagerState()
 
-            fileAndMediaPermissionState = rememberMultiplePermissionsState(permissions = listOf(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE))
+            fileAndMediaPermissionState = rememberMultiplePermissionsState(permissions = getRightPermissions())
 
             GalleryTheme(
                 changeStatusBarColor = resetStatusBarColor,
@@ -266,7 +270,7 @@ class MainActivity : ComponentActivity() {
             ) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = if (mediaIndex.value != null) Color.Black else colorScheme.background
+                    color = if (singleMediaVisibility.value) Color.Black else colorScheme.background
                 ) {
                     Box(modifier = Modifier.fillMaxSize()) {
 
@@ -295,7 +299,7 @@ class MainActivity : ComponentActivity() {
                                         !bottomDrawerState.isClosed -> scope.launch {
                                             bottomDrawerState.close()
                                         }
-                                        selectedMedia.value != null -> backToListAction()
+                                        singleMediaVisibility.value -> backToListAction()
                                         else -> finishAffinity()
                                     }
                                 }
@@ -349,7 +353,7 @@ class MainActivity : ComponentActivity() {
                                             modifier = Modifier.fillMaxSize(),
                                         ) {
                                             AnimatedVisibility(
-                                                visible = selectedMedia.value == null && mediaList.list.isNotEmpty(),
+                                                visible = !singleMediaVisibility.value && mediaList.list.isNotEmpty(),
                                                 enter = fadeIn(),
                                                 exit = fadeOut()
                                             ) {
@@ -359,18 +363,23 @@ class MainActivity : ComponentActivity() {
                                                         lazyGridState = lazyGridState,
                                                         mediaList = mediaList,
                                                         checkBoxVisible = checkBoxVisible,
-                                                    ) { mediaClass ->
-                                                        bottomDrawerValue.value = BottomDrawer.Media
-                                                        mediaIndex.value = mediaClass.index
-                                                        selectedMedia.value = mediaClass
+                                                    ) { int ->
+                                                        cor {
+                                                            singleMediaVisibility.value = true
+                                                            statePager.scrollToPage(int)
+                                                            bottomDrawerValue.value = BottomDrawer.Media
+                                                        }
                                                     }
                                             }
 
                                             AnimatedVisibility(
-                                                visible = selectedMedia.value != null,
+                                                visible = singleMediaVisibility.value,
                                                 enter = scaleIn(),
                                                 exit = fadeOut()
                                             ) {
+
+                                                val currentPage = remember { MutableSharedFlow<Int>() }
+                                                val blockScrolling = remember { mutableStateOf(false) }
 
                                                 DisposableEffect(key1 = true) {
 
@@ -385,85 +394,76 @@ class MainActivity : ComponentActivity() {
                                                     }
                                                 }
 
-                                                AnimatedContent(
-                                                    targetState = mediaIndex.value,
-                                                    transitionSpec = {
-                                                        if (targetState!! > initialState!!) {
-                                                            slideInHorizontally { width -> width } + fadeIn() with
-                                                                    slideOutHorizontally { width -> -width } + fadeOut()
-                                                        } else {
-                                                            slideInHorizontally { width -> -width } + fadeIn() with
-                                                                    slideOutHorizontally { width -> width } + fadeOut()
-                                                        }.using(
-                                                            SizeTransform(clip = false)
-                                                        )
+                                                LaunchedEffect(key1 = statePager.currentPage) {
+                                                    if (!staticMedia.value)
+                                                        selectedMedia.value = mediaList.list[statePager.currentPage]
+
+                                                    currentPage.emit(statePager.currentPage)
+                                                }
+
+                                                HorizontalPager(
+                                                    count = if (staticMedia.value) 1 else mediaList.list.size,
+                                                    state = statePager,
+                                                    itemSpacing = 8.dp,
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    userScrollEnabled = !staticMedia.value && !blockScrolling.value,
+                                                ) { page ->
+
+                                                    val media = remember {
+                                                        if (staticMedia.value) selectedMedia.value else mediaList.list[page]
                                                     }
-                                                ) {
 
-                                                    LaunchedEffect(key1 = mediaIndex.value) {
+                                                    LaunchedEffect(key1 = media) {
 
-                                                        if (selectedMedia.value?.type == VIDEO)
+                                                        if (media?.type == VIDEO)
                                                             backToListAction = {
+                                                                customAction?.invoke()
                                                                 exoPlayer?.playWhenReady = false
                                                                 exoPlayer?.stop()
-                                                                customAction?.invoke()
-                                                                selectedMedia.value = null
                                                                 toolbarVisible.value = true
+                                                                selectedMedia.value = null
+                                                                singleMediaVisibility.value = false
                                                                 scope.launch { bottomDrawerState.close() }
                                                             }
                                                         else
                                                             backToListAction = {
                                                                 customAction?.invoke()
-                                                                selectedMedia.value = null
                                                                 toolbarVisible.value = true
+                                                                selectedMedia.value = null
+                                                                singleMediaVisibility.value = false
                                                                 scope.launch { bottomDrawerState.close() }
                                                             }
 
-                                                        if (selectedMedia.value?.uri == null) {
-                                                            backToListAction.invoke()
+                                                        if (media?.uri == null) {
                                                             Toast.makeText(context, getString(R.string.error_uri), Toast.LENGTH_SHORT).show()
+                                                            if (staticMedia.value) finishAffinity() else backToListAction()
                                                         }
                                                     }
 
-                                                    when (selectedMedia.value?.type) {
+                                                    when (media?.type) {
                                                         IMAGE -> {
                                                             contentResolver.ImageViewerUI(
+                                                                blockScrolling = blockScrolling,
                                                                 context = context,
-                                                                image = selectedMedia.value,
-                                                                onControllerVisibilityChanged = {
-                                                                    toolbarVisible.value = !toolbarVisible.value
-
-                                                                    toolbarVisible.value
-                                                                },
-                                                                staticViewer = mediaIndex.value == -1
-                                                            ) { status ->
-
-                                                                mediaIndex.calculatePossibleIndex(status, mediaList.list.size)
-
-                                                                if (selectedMedia.value?.index != mediaIndex.value)
-                                                                    selectedMedia.value = mediaList.list[mediaIndex.value!!]
-                                                            }
+                                                                image = media,
+                                                                toolbarVisible = toolbarVisible,
+                                                            )
                                                         }
                                                         else -> {
                                                             VideoViewerUI(
                                                                 exoPlayer = exoPlayer!!,
-                                                                video = selectedMedia.value,
+                                                                video = media,
+                                                                page = page,
+                                                                currentPage = currentPage,
                                                                 onClose = backToListAction,
                                                                 isToolbarVisible = toolbarVisible,
-                                                                staticViewer = mediaIndex.value == -1
-                                                            ) { status ->
-
-                                                                mediaIndex.calculatePossibleIndex(status, mediaList.list.size)
-
-                                                                if (selectedMedia.value?.index != mediaIndex.value)
-                                                                    selectedMedia.value = mediaList.list[mediaIndex.value!!]
-                                                            }
+                                                            )
                                                         }
                                                     }
                                                 }
                                             }
 
-                                            if (mediaList.busy.value && selectedMedia.value == null)
+                                            if (mediaList.busy.value && !singleMediaVisibility.value)
                                                 Column(
                                                     modifier = Modifier
                                                         .fillMaxSize(),
@@ -509,14 +509,14 @@ class MainActivity : ComponentActivity() {
                                             ToolBarUI(
                                                 visible = ((firstVisibleItemScrollOffset.value == 0) || !lazyGridState.isScrollInProgress || checkBoxVisible.value) && toolbarVisible.value,
                                                 mediaList = mediaList.list,
-                                                staticView = mediaIndex.value == -1,
+                                                staticView = staticMedia.value,
                                                 mediaDelete = mediaDeleteFlow,
                                                 selectedMedia = selectedMedia,
                                                 checkBoxVisible = checkBoxVisible,
                                                 bottomDrawerValue = bottomDrawerValue,
                                                 bottomDrawerState = bottomDrawerState,
                                                 backgroundColor =
-                                                if (mediaIndex.value == null) {
+                                                if (!singleMediaVisibility.value) {
                                                     if (firstVisibleItemScrollOffset.value == 0) {
                                                         colorScheme.background
                                                     } else {

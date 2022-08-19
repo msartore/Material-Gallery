@@ -27,7 +27,6 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.ui.unit.dp
-import dev.msartore.gallery.models.MediaClass
 import dev.msartore.gallery.models.MediaList
 
 @RequiresApi(Build.VERSION_CODES.Q)
@@ -36,7 +35,7 @@ fun Context.MediaListUI(
     checkBoxVisible: MutableState<Boolean>,
     lazyGridState: LazyGridState,
     mediaList: MediaList,
-    onClickImage: (MediaClass) -> Unit
+    onClickImage: (Int) -> Unit
 ) {
     LazyVerticalGrid(
         contentPadding = PaddingValues(top = 80.dp),
@@ -51,10 +50,8 @@ fun Context.MediaListUI(
                 checkBoxVisible = checkBoxVisible,
                 mediaList = mediaList,
             ) {
-                mediaList.list[index].index = index
-
                 onClickImage(
-                    mediaList.list[index]
+                    index
                 )
             }
         }

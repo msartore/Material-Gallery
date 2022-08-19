@@ -60,7 +60,6 @@ import kotlinx.coroutines.launch
 import java.text.DateFormat
 import java.text.DateFormat.getDateInstance
 
-
 @OptIn(ExperimentalMaterialApi::class, ExperimentalMaterialApi::class)
 @Composable
 fun CustomBottomDrawer(

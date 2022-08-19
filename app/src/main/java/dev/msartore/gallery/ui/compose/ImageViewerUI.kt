@@ -18,10 +18,12 @@ package dev.msartore.gallery.ui.compose
 
 import android.content.ContentResolver
 import android.content.Context
+import android.util.Size
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectTransformGestures
-import androidx.compose.foundation.gestures.forEachGesture
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
@@ -41,84 +43,109 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import com.bumptech.glide.Glide
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
+import dev.msartore.gallery.models.DoubleClickHandler
 import dev.msartore.gallery.models.MediaClass
 import dev.msartore.gallery.utils.changeBarsStatus
 import dev.msartore.gallery.utils.checkIfNewTransitionIsNearest
+import dev.msartore.gallery.utils.cor
 import dev.msartore.gallery.utils.getImageSize
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ContentResolver.ImageViewerUI(
+    blockScrolling: MutableState<Boolean>,
     context: Context,
     image: MediaClass?,
-    staticViewer: Boolean = false,
-    onControllerVisibilityChanged: () -> Boolean,
-    changeMedia: (ChangeMediaState) -> Unit,
+    toolbarVisible: MutableState<Boolean>,
 ) {
 
-    if (image != null) {
+    val thumbnail = remember { mutableStateOf<ImageBitmap?>(null) }
+    val scale = remember { mutableStateOf(1f) }
+    val translate = remember { mutableStateOf(Offset(0f, 0f)) }
+    val rotation = remember { mutableStateOf(0f) }
+    val imageSize = remember { mutableStateOf<Size?>(null) }
+    val scope = rememberCoroutineScope()
+    val systemUiController = rememberSystemUiController()
+    val interactionSource = remember { MutableInteractionSource() }
+    val doubleClickHandler = remember {
+        DoubleClickHandler()
+    }
 
-        val thumbnail = remember { mutableStateOf<ImageBitmap?>(null) }
-        val scale = remember { mutableStateOf(1f) }
-        val translate = remember { mutableStateOf(Offset(0f, 0f)) }
-        val rotation = remember { mutableStateOf(0f) }
-        val imageSize = remember { getImageSize(image = image.uri)}
-        val systemUiController = rememberSystemUiController()
-        val slideMemory = remember { mutableStateListOf<Float>() }
+    DisposableEffect(key1 = image?.uri) {
 
-        LaunchedEffect(key1 = true) {
-            withContext(Dispatchers.IO) {
-                thumbnail.value =
-                    Glide
-                        .with(context)
-                        .asBitmap()
-                        .load(image.uri)
-                        .submit()
-                        .get()
-                        .asImageBitmap()
-            }
+        cor {
+            if (image != null) {
 
-            image.actionReset = {
-                image.imageTransform.value = false
-                scale.value = 1f
-                translate.value = Offset(0f, 0f)
-                rotation.value = 0f
+                imageSize.value = getImageSize(image = image.uri)
+
+                withContext(Dispatchers.IO) {
+                    thumbnail.value =
+                        Glide
+                            .with(context)
+                            .asBitmap()
+                            .load(image.uri)
+                            .submit()
+                            .get()
+                            .asImageBitmap()
+                }
+
+                image.actionReset = {
+                    image.imageTransform.value = false
+                    scale.value = 1f
+                    translate.value = Offset(0f, 0f)
+                    rotation.value = 0f
+                }
             }
         }
 
-        Box(
-            modifier = Modifier
-                .clip(RectangleShape)
-                .fillMaxSize()
-                .pointerInput(Unit) {
-                    detectTapGestures(
-                        onTap = {
-                            systemUiController.changeBarsStatus(onControllerVisibilityChanged())
-                        },
-                        onDoubleTap = {
-                            if (rotation.value != 0f || scale.value != 1f) {
-                                image.actionReset()
-                            }
-                        }
-                    )
-                }
-                .pointerInput(Unit) {
-                    forEachGesture {
-                        detectTransformGestures { centroid, pan, zoom, rot ->
+        onDispose {
+            doubleClickHandler.finish()
+        }
+    }
 
-                            val maxX = imageSize.width * (scale.value - 1) / 2
-                            val maxY = imageSize.height * (scale.value - 1) / 2
-                            val translateTest = translate.value + pan
+    Box(
+        modifier = Modifier
+            .clip(RectangleShape)
+            .fillMaxSize()
+            .combinedClickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = {
+                    toolbarVisible.value = !toolbarVisible.value
+                    systemUiController.changeBarsStatus(toolbarVisible.value)
+                },
+                onDoubleClick = {
+                    if (((rotation.value != 0f) || (scale.value >= 2f)) && doubleClickHandler.enabled) {
+                        image?.actionReset?.invoke()
+                    }
+                },
+            )
+            .pointerInput(Unit) {
+                forEachGesture {
+                    awaitPointerEventScope {
+                        awaitFirstDown()
+                        do {
+                            val event = awaitPointerEvent()
+                            val zoom = event.calculateZoom()
+                            val pan = event.calculatePan()
+                            val rot = event.calculateRotation()
+                            val lastScale = scale.value
+                            val lastRotation = rotation.value
+                            val maxX = imageSize.value!!.width * (scale.value - 1) / 2
+                            val maxY = imageSize.value!!.height * (scale.value - 1) / 2
+                            val newTranslate = translate.value + pan
 
                             if (
-                                translateTest.x in -maxX..maxX &&
-                                translateTest.y in -maxY..maxY ||
+                                newTranslate.x in -maxX..maxX &&
+                                newTranslate.y in -maxY..maxY ||
                                 checkIfNewTransitionIsNearest(
                                     maxX = maxX,
                                     maxY = maxY,
                                     oldTransition = translate.value,
-                                    newTransition = translateTest
+                                    newTransition = newTranslate
                                 )
                             ) {
                                 translate.value += pan
@@ -137,32 +164,31 @@ fun ContentResolver.ImageViewerUI(
                             rotation.value += rot
 
                             if (rotation.value != 0f || scale.value != 1f) {
-                                image.imageTransform.value = true
-                            }
-                            else if (!staticViewer) {
-                                slideMemory.add(centroid.x)
-
-                                if (slideMemory.size == 2) {
-
-                                    when {
-                                        slideMemory[0] < slideMemory[1] -> {
-                                            changeMedia(ChangeMediaState.Backward)
-                                        }
-                                        slideMemory[0] > slideMemory[1] -> {
-                                            changeMedia(ChangeMediaState.Forward)
-                                        }
+                                image?.imageTransform?.value = true
+                                blockScrolling.value = true
+                                if (lastScale != scale.value || lastRotation != rotation.value)
+                                    scope.launch {
+                                        doubleClickHandler.flow.emit(Unit)
                                     }
-                                }
-
-                                if (slideMemory.size > 3) {
-                                    slideMemory.clear()
-                                }
+                            } else {
+                                blockScrolling.value = false
                             }
-                        }
+
+                        } while (event.changes.any { it.pressed })
                     }
                 }
-        ) {
-            if (thumbnail.value != null)
+            }
+    ) {
+        when (thumbnail.value) {
+            null -> {
+                CircularProgressIndicator(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .align(Alignment.Center),
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+            else -> {
                 Image(
                     modifier = Modifier
                         .fillMaxSize()
@@ -178,18 +204,7 @@ fun ContentResolver.ImageViewerUI(
                     contentDescription = null,
                     contentScale = ContentScale.Fit,
                 )
-            else
-                CircularProgressIndicator(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .align(Alignment.Center),
-                    color = MaterialTheme.colorScheme.primary
-                )
+            }
         }
     }
-}
-
-enum class ChangeMediaState {
-    Forward,
-    Backward,
 }

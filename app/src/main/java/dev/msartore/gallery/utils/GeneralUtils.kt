@@ -16,6 +16,7 @@
 
 package dev.msartore.gallery.utils
 
+import android.Manifest.permission.*
 import android.app.Activity
 import android.content.ContentResolver
 import android.content.Context
@@ -29,7 +30,6 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import android.widget.Toast
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.geometry.Offset
 import androidx.lifecycle.Lifecycle
@@ -38,7 +38,6 @@ import androidx.print.PrintHelper
 import com.google.accompanist.systemuicontroller.SystemUiController
 import com.google.android.exoplayer2.ExoPlayer
 import dev.msartore.gallery.models.MediaClass
-import dev.msartore.gallery.ui.compose.ChangeMediaState
 import java.text.DateFormat
 import java.util.*
 import kotlin.math.abs
@@ -167,26 +166,6 @@ fun Activity.doPhotoPrint(
     }
 }
 
-fun MutableState<Int?>.calculatePossibleIndex(
-    status: ChangeMediaState,
-    size: Int
-) {
-
-    val index = value!!
-
-    value =
-        if (status == ChangeMediaState.Forward)
-            if (index + 1 in 0 until size)
-                index + 1
-            else
-                index
-        else
-            if (index - 1 in 0 until size)
-                index - 1
-            else
-                index
-}
-
 fun SnapshotStateList<MediaClass>.mergeList(list: List<MediaClass>) {
 
     this.removeAll(
@@ -197,3 +176,16 @@ fun SnapshotStateList<MediaClass>.mergeList(list: List<MediaClass>) {
         this.add(it)
     }
 }
+
+fun getRightPermissions() =
+    when (Build.VERSION.SDK_INT) {
+        in Build.VERSION_CODES.P..Build.VERSION_CODES.Q -> {
+            listOf(WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE)
+        }
+        Build.VERSION_CODES.TIRAMISU -> {
+            listOf(READ_MEDIA_IMAGES, READ_MEDIA_VIDEO)
+        }
+        else -> {
+            listOf(READ_EXTERNAL_STORAGE)
+        }
+    }

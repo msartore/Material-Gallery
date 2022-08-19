@@ -27,7 +27,6 @@ open class MediaClass(
     val size: Int? = null,
     val date: Long? = null,
     val duration: String? = null,
-    var index: Int = -1,
     val imageTransform: MutableState<Boolean> = mutableStateOf(false),
     var selected: MutableState<Boolean> = mutableStateOf(false),
     var actionReset: () -> Unit = {},

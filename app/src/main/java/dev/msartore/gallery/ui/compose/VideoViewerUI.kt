@@ -22,8 +22,6 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectTransformGestures
-import androidx.compose.foundation.gestures.forEachGesture
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CircularProgressIndicator
@@ -56,17 +54,19 @@ import dev.msartore.gallery.utils.cor
 import dev.msartore.gallery.utils.getLifecycleEventObserver
 import dev.msartore.gallery.utils.transformMillsToFormattedTime
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.withContext
 
 @Composable
 fun VideoViewerUI(
     exoPlayer: ExoPlayer,
     video: MediaClass?,
+    page: Int,
+    currentPage: MutableSharedFlow<Int>,
     onClose: () -> Unit,
-    staticViewer: Boolean = false,
     isToolbarVisible: MutableState<Boolean>,
-    onChangeMedia: (ChangeMediaState) -> Unit
 ) {
+    val cp = currentPage.collectAsState(initial = -1)
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val systemUiController = rememberSystemUiController()
     val playbackState = remember { mutableStateOf(PlaybackState.STATE_BUFFERING) }
@@ -74,7 +74,6 @@ fun VideoViewerUI(
     val currentPositionFormatted = remember { mutableStateOf("00:00") }
     val currentPosition = remember { mutableStateOf(0f) }
     val duration = remember { mutableStateOf("00:00") }
-    val slideMemory = remember { mutableStateListOf<Float>() }
     val sliderTheme = remember {
         object: RippleTheme {
             @Composable
@@ -126,6 +125,15 @@ fun VideoViewerUI(
         onClose()
     }
 
+    cor {
+        currentPage.collect {
+            if (it == page)
+                exoPlayer.play()
+            else
+                exoPlayer.pause()
+        }
+    }
+
     if (video != null) {
 
         LaunchedEffect(key1 = true) {
@@ -137,16 +145,13 @@ fun VideoViewerUI(
 
             val lifecycleObserver = getLifecycleEventObserver(
                 onResume = {
-                    if (isPlaying.value != false) {
-                        exoPlayer.playWhenReady = true
-                        isPlaying.value = true
-                        timer.start()
+                    if (isPlaying.value != false && cp.value == page) {
+                        exoPlayer.play()
                     }
                 },
                 onPause = {
                     if (isPlaying.value == true) {
-                        exoPlayer.playWhenReady = false
-                        timer.stop()
+                        exoPlayer.pause()
                     }
                 },
                 onDestroy = {
@@ -163,8 +168,6 @@ fun VideoViewerUI(
             }
         }
 
-
-
         AndroidView(
             modifier = Modifier
                 .fillMaxSize()
@@ -175,35 +178,6 @@ fun VideoViewerUI(
                             systemUiController.changeBarsStatus(isToolbarVisible.value)
                         }
                     )
-                }
-                .pointerInput(Unit) {
-                    if (!staticViewer) {
-                        forEachGesture {
-                            detectTransformGestures { centroid, _, _, _ ->
-
-                                slideMemory.add(centroid.x)
-
-                                if (slideMemory.size == 2) {
-
-                                    exoPlayer.playWhenReady = false
-                                    exoPlayer.stop()
-                                    timer.stop()
-                                    systemUiController.changeBarsStatus(true)
-
-                                    when {
-                                        slideMemory[0] < slideMemory[1] ->
-                                            onChangeMedia(ChangeMediaState.Backward)
-                                        slideMemory[0] > slideMemory[1] ->
-                                            onChangeMedia(ChangeMediaState.Forward)
-                                    }
-                                }
-
-                                if (slideMemory.size > 3) {
-                                    slideMemory.clear()
-                                }
-                            }
-                        }
-                    }
                 },
             factory = { context ->
 
@@ -278,14 +252,14 @@ fun VideoViewerUI(
                         ) {
                             when {
                                 isPlaying.value == true -> {
-                                    exoPlayer.playWhenReady = false
+                                    exoPlayer.pause()
                                 }
                                 isPlaying.value == false && playbackState.value != PlaybackState.STATE_FAST_FORWARDING -> {
-                                    exoPlayer.playWhenReady = true
+                                    exoPlayer.play()
                                 }
                                 else -> {
                                     exoPlayer.seekTo(0)
-                                    exoPlayer.playWhenReady = true
+                                    exoPlayer.play()
                                 }
                             }
 
@@ -311,11 +285,11 @@ fun VideoViewerUI(
                             valueRange = 0f..if (exoPlayer.duration < 0) 0f else exoPlayer.duration / 1000f,
                             onValueChange = {
                                 currentPosition.value = it
-                                exoPlayer.playWhenReady = false
+                                exoPlayer.pause()
                             },
                             onValueChangeFinished = {
                                 exoPlayer.seekTo((currentPosition.value * 1000).toLong())
-                                exoPlayer.playWhenReady = true
+                                exoPlayer.play()
                             },
                             colors = SliderDefaults.colors(
                                 activeTickColor = Color.Transparent,

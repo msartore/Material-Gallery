@@ -38,7 +38,6 @@ import dev.msartore.gallery.models.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-
 fun ContentResolver.queryImageMediaStore(
     list: MutableList<MediaClass>
 ) {
@@ -95,8 +94,8 @@ fun ContentResolver.queryImageMediaStore(
             if (list.any { it.uri == contentUri }) continue
 
             val mediaClass = MediaClass(
-                uri = contentUri,
                 name = name,
+                uri = contentUri,
                 type = MediaType.IMAGE,
                 size = size,
                 date =  if (dateTaken >= dateModified) dateTaken else dateModified
@@ -166,9 +165,9 @@ fun ContentResolver.queryVideoMediaStore(
             if (list.any { it.uri == contentUri }) continue
 
             val mediaClass = MediaClass(
+                name = name,
                 uri = contentUri,
                 type = MediaType.VIDEO,
-                name = name,
                 size = size,
                 date = if (dateTaken >= dateModified) dateTaken else dateModified,
                 duration = transformMillsToFormattedTime(duration)
