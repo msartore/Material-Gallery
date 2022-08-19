@@ -307,7 +307,7 @@ class MainActivity : ComponentActivity() {
                                 AnimatedVisibility(
                                     visible = isAboutSectionVisible.value,
                                     enter = slideInHorizontally { it },
-                                    exit = slideOutHorizontally { -it },
+                                    exit = slideOutHorizontally { it },
                                 ) {
                                     AboutUI {
                                         scope.launch {
