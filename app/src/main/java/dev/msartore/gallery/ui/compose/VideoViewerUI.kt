@@ -84,7 +84,7 @@ fun VideoViewerUI(
         }
     }
 
-    cor {
+    LaunchedEffect(key1 = true) {
         currentPage.collect {
             if (it == page) {
                 exoPlayer.value?.play()
@@ -165,7 +165,6 @@ fun VideoViewerUI(
             }
 
             BackHandler(true) {
-                timer.stop()
                 onClose()
             }
 
@@ -192,6 +191,7 @@ fun VideoViewerUI(
                 lifecycle.addObserver(lifecycleObserver)
 
                 onDispose {
+                    timer.stop()
                     lifecycle.removeObserver(lifecycleObserver)
                     exoPlayer.value?.release()
                 }

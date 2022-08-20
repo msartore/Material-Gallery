@@ -159,7 +159,6 @@ class MainActivity : ComponentActivity() {
         val singleMediaVisibility = mutableStateOf(false)
         val mediaDeleteFlow = MutableSharedFlow<DeleteMediaVars>()
         var customAction: (() -> Unit)? = null
-        var backToListAction = {}
         val getContent = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
             fileAndMediaPermissionState?.allPermissionsGranted?.let {
                 if (!it) {
@@ -255,6 +254,13 @@ class MainActivity : ComponentActivity() {
             val dialogPrint = remember { mutableStateOf(false) }
             val firstVisibleItemScrollOffset = remember { derivedStateOf { lazyGridState.firstVisibleItemScrollOffset } }
             val statePager = rememberPagerState()
+            val backToListAction = remember<() -> Unit> { {
+                customAction?.invoke()
+                toolbarVisible.value = true
+                singleMediaVisibility.value = false
+                selectedMedia.value = null
+                scope.launch { bottomDrawerState.close() }
+            } }
 
             fileAndMediaPermissionState = rememberMultiplePermissionsState(permissions = getRightPermissions())
 
@@ -368,11 +374,10 @@ class MainActivity : ComponentActivity() {
 
                                             AnimatedVisibility(
                                                 visible = singleMediaVisibility.value,
-                                                enter = scaleIn(),
-                                                exit = fadeOut()
+                                                enter = scaleIn()
                                             ) {
 
-                                                val currentPage = remember { MutableSharedFlow<Int>() }
+                                                val currentPage = remember { MutableSharedFlow<Int>(1) }
                                                 val blockScrolling = remember { mutableStateOf(false) }
 
                                                 DisposableEffect(key1 = true) {
@@ -408,23 +413,6 @@ class MainActivity : ComponentActivity() {
                                                     }
 
                                                     LaunchedEffect(key1 = media) {
-
-                                                        if (media?.type == VIDEO)
-                                                            backToListAction = {
-                                                                customAction?.invoke()
-                                                                toolbarVisible.value = true
-                                                                selectedMedia.value = null
-                                                                singleMediaVisibility.value = false
-                                                                scope.launch { bottomDrawerState.close() }
-                                                            }
-                                                        else
-                                                            backToListAction = {
-                                                                customAction?.invoke()
-                                                                toolbarVisible.value = true
-                                                                selectedMedia.value = null
-                                                                singleMediaVisibility.value = false
-                                                                scope.launch { bottomDrawerState.close() }
-                                                            }
 
                                                         if (media?.uri == null) {
                                                             Toast.makeText(context, getString(R.string.error_uri), Toast.LENGTH_SHORT).show()
