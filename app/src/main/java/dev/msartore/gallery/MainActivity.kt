@@ -33,10 +33,10 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material.BottomDrawerValue
-import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.rememberBottomDrawerState
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
@@ -53,7 +53,6 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.MultiplePermissionsState
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
-import com.google.android.exoplayer2.ExoPlayer
 import dev.msartore.gallery.MainActivity.BasicInfo.isDarkTheme
 import dev.msartore.gallery.models.DeleteMediaVars
 import dev.msartore.gallery.models.LoadingStatus
@@ -88,7 +87,6 @@ class MainActivity : ComponentActivity() {
     private val checkBoxVisible = mutableStateOf(false)
     private val mediaList = MediaList()
     private val dialogLoadingStatus = LoadingStatus()
-    private var exoPlayer: ExoPlayer? = null
     private var intentSaveLocation =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { activityResult ->
             if (activityResult.resultCode == RESULT_OK) {
@@ -242,10 +240,6 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
-
-        cor {
-            exoPlayer = getExoPlayer(context)
-        }
 
         setContent {
 
@@ -418,8 +412,6 @@ class MainActivity : ComponentActivity() {
                                                         if (media?.type == VIDEO)
                                                             backToListAction = {
                                                                 customAction?.invoke()
-                                                                exoPlayer?.playWhenReady = false
-                                                                exoPlayer?.stop()
                                                                 toolbarVisible.value = true
                                                                 selectedMedia.value = null
                                                                 singleMediaVisibility.value = false
@@ -451,7 +443,6 @@ class MainActivity : ComponentActivity() {
                                                         }
                                                         else -> {
                                                             VideoViewerUI(
-                                                                exoPlayer = exoPlayer!!,
                                                                 video = media,
                                                                 page = page,
                                                                 currentPage = currentPage,
@@ -569,8 +560,6 @@ class MainActivity : ComponentActivity() {
             unregisterContentResolver(it.first)
             unregisterContentResolver(it.second)
         }
-
-        exoPlayer?.release()
     }
 }
 
