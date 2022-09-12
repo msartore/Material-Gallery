@@ -16,9 +16,12 @@
 
 package dev.msartore.gallery.ui.compose
 
+import android.os.Build
+import android.provider.MediaStore
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.MultiplePermissionsState
@@ -30,14 +33,36 @@ import dev.msartore.gallery.ui.compose.basic.Dialog
 @Composable
 fun FileAndMediaPermission(
     fileAndMediaPermissionState: MultiplePermissionsState?,
+    manageMediaSettings: () -> Unit,
     navigateToSettingsScreen: () -> Unit,
     onPermissionGranted: @Composable () -> Unit,
     onPermissionDenied: () -> Unit
 ) {
 
+    val context = LocalContext.current
+
     fileAndMediaPermissionState?.let { mPermissionState ->
-        if (mPermissionState.allPermissionsGranted)
+        if (mPermissionState.allPermissionsGranted) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !MediaStore.canManageMedia(context)) {
+                val dialogStatus = remember { mutableStateOf(true) }
+
+                Dialog(
+                    title = stringResource(R.string.permission_request),
+                    text = stringResource(R.string.better_permission_request_text),
+                    closeOnClick = false,
+                    status = dialogStatus,
+                    onCancel = {
+                        dialogStatus.value = false
+                    },
+                    onConfirm = {
+                        dialogStatus.value = false
+                        manageMediaSettings()
+                    }
+                )
+            }
+
             onPermissionGranted()
+        }
         else {
             val dialogStatus = remember { mutableStateOf(true) }
 

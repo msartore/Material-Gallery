@@ -276,6 +276,14 @@ class MainActivity : ComponentActivity() {
 
                         FileAndMediaPermission(
                             fileAndMediaPermissionState = fileAndMediaPermissionState,
+                            manageMediaSettings = {
+                                getContent.launch(
+                                    Intent(
+                                        Settings.ACTION_REQUEST_MANAGE_MEDIA,
+                                        Uri.parse("package:${BuildConfig.APPLICATION_ID}")
+                                    )
+                                )
+                            },
                             navigateToSettingsScreen = {
                                 getContent.launch(intentSettings)
                             },

@@ -39,4 +39,6 @@
     <string name="refresh_busy">Si prega di attendere fino al termine dell\'operazione</string>
     <string name="edit">Modifica</string>
     <string name="error_uri">Errore durante il caricamento dei media, il media potrebbe essere danneggiato</string>
+    <string name="privacy_policy">Politica sulla riservatezza</string>
+    <string name="better_permission_request_text">Ti preghiamo di concedere alla nostra app la gestione dei tuoi file multimediali, in modo che tu possa avere una migliore esperienza nell\'utilizzo.</string>
 </resources>

@@ -183,7 +183,7 @@ fun getRightPermissions() =
             listOf(WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE)
         }
         Build.VERSION_CODES.TIRAMISU -> {
-            listOf(READ_MEDIA_IMAGES, READ_MEDIA_VIDEO)
+            listOf(READ_MEDIA_IMAGES)
         }
         else -> {
             listOf(READ_EXTERNAL_STORAGE)
