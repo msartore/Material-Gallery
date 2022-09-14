@@ -1,6 +1,6 @@
 # Material Gallery
 
-<img src="resources/banner.png">
+<img src="docs/resources/banner.png">
 
 [![CodeFactor](https://www.codefactor.io/repository/github/msartore/material-gallery/badge)](https://www.codefactor.io/repository/github/msartore/material-gallery) ![GitHub Workflow Status](https://img.shields.io/github/workflow/status/msartore/Material-Gallery/build%20apk) ![GitHub release (latest by date)](https://img.shields.io/github/v/release/msartore/Material-Gallery) 
 
