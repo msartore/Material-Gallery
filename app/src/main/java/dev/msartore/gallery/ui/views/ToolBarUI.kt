@@ -1,20 +1,4 @@
-/**
- * Copyright © 2022  Massimiliano Sartore
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see https://www.gnu.org/licenses/
- */
-
-package dev.msartore.gallery.ui.compose
+package dev.msartore.gallery.ui.views
 
 import android.app.Activity
 import android.content.Intent
@@ -31,7 +15,6 @@ import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.rememberCoroutineScope
@@ -40,18 +23,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import dev.msartore.gallery.MainActivity.BasicInfo.isDarkTheme
 import dev.msartore.gallery.R
 import dev.msartore.gallery.models.DeleteMediaVars
 import dev.msartore.gallery.models.MediaClass
 import dev.msartore.gallery.models.MediaType
-import dev.msartore.gallery.ui.compose.basic.Icon
+import dev.msartore.gallery.ui.compose.Icon
+import dev.msartore.gallery.ui.compose.TextAuto
 import dev.msartore.gallery.utils.checkCameraHardware
 import dev.msartore.gallery.utils.cor
 import dev.msartore.gallery.utils.shareImage
@@ -159,15 +140,13 @@ fun Activity.ToolBarUI(
 
             when {
                 !checkBoxVisible.value && selectedMedia.value == null -> {
-                    Text(
+                    TextAuto(
                         modifier = Modifier
                             .padding(5.dp),
-                        text = stringResource(id = R.string.app_name),
+                        id = R.string.app_name,
                         fontSize = 20.sp,
                         textAlign = TextAlign.Center,
-                        color = if (isDarkTheme.value) Color.White else Color.Black,
                         fontWeight = FontWeight.SemiBold,
-                        fontFamily = FontFamily.SansSerif
                     )
 
                     Row(

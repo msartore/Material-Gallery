@@ -1,11 +1,13 @@
-package dev.msartore.gallery.ui.compose
+package dev.msartore.gallery.ui.views
 
 import android.app.Activity
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
@@ -21,10 +23,9 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.print.PrintHelper
 import com.bumptech.glide.Glide
 import dev.msartore.gallery.R
-import dev.msartore.gallery.ui.compose.basic.DialogContainer
-import dev.msartore.gallery.ui.compose.basic.DropDownMenu
-import dev.msartore.gallery.ui.compose.basic.TextAuto
-import dev.msartore.gallery.ui.compose.basic.TextButton
+import dev.msartore.gallery.ui.compose.DialogContainer
+import dev.msartore.gallery.ui.compose.DropDownMenu
+import dev.msartore.gallery.ui.compose.TextAuto
 import dev.msartore.gallery.utils.cor
 import dev.msartore.gallery.utils.doPhotoPrint
 import kotlinx.coroutines.Dispatchers
@@ -90,34 +91,42 @@ fun Activity.DialogPrintUI(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 TextButton(
-                    text = stringResource(id = R.string.cancel),
+                    onClick = {
+                        status.value = false
+                    }
                 ) {
-                    status.value = false
+                    TextAuto(
+                        text = stringResource(id = R.string.cancel),
+                    )
                 }
 
                 Spacer(modifier = Modifier.width(8.dp))
 
                 TextButton(
-                    text = stringResource(id = R.string.print),
-                ) {
-                    status.value = false
+                    onClick = {
+                        status.value = false
 
-                    cor {
-                        withContext(Dispatchers.IO) {
-                            doPhotoPrint(
-                                Glide
-                                    .with(this@DialogPrintUI)
-                                    .asBitmap()
-                                    .load(uri)
-                                    .submit()
-                                    .get(),
-                                scaleMode = when (selected.value) {
-                                    R.string.fill_content -> PrintHelper.SCALE_MODE_FILL
-                                    else -> PrintHelper.SCALE_MODE_FIT
-                                }
-                            )
+                        cor {
+                            withContext(Dispatchers.IO) {
+                                doPhotoPrint(
+                                    Glide
+                                        .with(this@DialogPrintUI)
+                                        .asBitmap()
+                                        .load(uri)
+                                        .submit()
+                                        .get(),
+                                    scaleMode = when (selected.value) {
+                                        R.string.fill_content -> PrintHelper.SCALE_MODE_FILL
+                                        else -> PrintHelper.SCALE_MODE_FIT
+                                    }
+                                )
+                            }
                         }
                     }
+                ) {
+                    TextAuto(
+                        text = stringResource(id = R.string.print),
+                    )
                 }
             }
         }
@@ -159,7 +168,7 @@ fun DialogLoadingUI(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center
             ) {
-                androidx.compose.material.CircularProgressIndicator(
+                CircularProgressIndicator(
                     modifier = Modifier
                         .size(45.dp),
                     color = MaterialTheme.colorScheme.primary

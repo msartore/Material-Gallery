@@ -1,28 +1,22 @@
-/**
- * Copyright © 2022  Massimiliano Sartore
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see https://www.gnu.org/licenses/
- */
-
-package dev.msartore.gallery.ui.compose
+package dev.msartore.gallery.ui.views
 
 import android.media.session.PlaybackState
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.*
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Slider
 import androidx.compose.material.SliderDefaults
@@ -32,7 +26,14 @@ import androidx.compose.material.ripple.RippleAlpha
 import androidx.compose.material.ripple.RippleTheme
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -49,8 +50,13 @@ import dev.msartore.gallery.R
 import dev.msartore.gallery.models.CustomTimer
 import dev.msartore.gallery.models.MediaClass
 import dev.msartore.gallery.models.PlayerEventListener
-import dev.msartore.gallery.ui.compose.basic.Icon
-import dev.msartore.gallery.utils.*
+import dev.msartore.gallery.models.VolumeProprieties
+import dev.msartore.gallery.ui.compose.Icon
+import dev.msartore.gallery.utils.changeBarsStatus
+import dev.msartore.gallery.utils.cor
+import dev.msartore.gallery.utils.getExoPlayer
+import dev.msartore.gallery.utils.getLifecycleEventObserver
+import dev.msartore.gallery.utils.transformMillsToFormattedTime
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.withContext
@@ -74,6 +80,7 @@ fun VideoViewerUI(
     val currentPositionFormatted = remember { mutableStateOf("00:00") }
     val currentPosition = remember { mutableStateOf(0f) }
     val duration = remember { mutableStateOf("00:00") }
+    val volumeProprieties = remember { VolumeProprieties() }
     val sliderTheme = remember {
         object: RippleTheme {
             @Composable
@@ -299,6 +306,26 @@ fun VideoViewerUI(
                             ) {
                                 exoPlayer.value?.seekForward()
                                 exoPlayer.value?.play()
+                            }
+                            Icon(
+                                id = if (volumeProprieties.isEnabled.value) R.drawable.volume_up_24px else R.drawable.volume_off_24px,
+                                tint = Color.White
+                            ) {
+                                if (volumeProprieties.isEnabled.value) {
+                                    volumeProprieties.apply {
+                                        isEnabled.value = false
+                                        volume = exoPlayer.value?.volume
+                                    }
+
+                                    exoPlayer.value?.volume = 0f
+                                }
+                                else {
+                                    volumeProprieties.apply {
+                                        exoPlayer.value?.volume = volume ?: 50f
+                                        isEnabled.value = true
+                                        volume = 0f
+                                    }
+                                }
                             }
                         }
 

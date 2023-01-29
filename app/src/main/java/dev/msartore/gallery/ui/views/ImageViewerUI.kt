@@ -1,20 +1,4 @@
-/**
- * Copyright © 2022  Massimiliano Sartore
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see https://www.gnu.org/licenses/
- */
-
-package dev.msartore.gallery.ui.compose
+package dev.msartore.gallery.ui.views
 
 import android.content.ContentResolver
 import android.content.Context
@@ -70,9 +54,7 @@ fun ContentResolver.ImageViewerUI(
     val scope = rememberCoroutineScope()
     val systemUiController = rememberSystemUiController()
     val interactionSource = remember { MutableInteractionSource() }
-    val doubleClickHandler = remember {
-        DoubleClickHandler()
-    }
+    val doubleClickHandler = remember { DoubleClickHandler() }
 
     DisposableEffect(key1 = image?.uri) {
 
@@ -106,7 +88,7 @@ fun ContentResolver.ImageViewerUI(
         }
     }
 
-    Box(
+    Box (
         modifier = Modifier
             .clip(RectangleShape)
             .fillMaxSize()
@@ -124,58 +106,57 @@ fun ContentResolver.ImageViewerUI(
                 },
             )
             .pointerInput(Unit) {
-                forEachGesture {
-                    awaitPointerEventScope {
-                        awaitFirstDown()
-                        do {
-                            val event = awaitPointerEvent()
-                            val zoom = event.calculateZoom()
-                            val pan = event.calculatePan()
-                            val rot = event.calculateRotation()
-                            val lastScale = scale.value
-                            val lastRotation = rotation.value
-                            val maxX = imageSize.value!!.width * (scale.value - 1) / 2
-                            val maxY = imageSize.value!!.height * (scale.value - 1) / 2
-                            val newTranslate = translate.value + pan
+                awaitEachGesture {
+                    awaitFirstDown()
+                    do {
+                        val event = awaitPointerEvent()
+                        val zoom = event.calculateZoom()
+                        val pan = event.calculatePan()
+                        val rot = event.calculateRotation()
+                        val lastScale = scale.value
+                        val lastRotation = rotation.value
+                        val lastTranslate = translate.value
+                        val maxX = imageSize.value!!.width * (scale.value - 1) / 2
+                        val maxY = imageSize.value!!.height * (scale.value - 1) / 2
+                        val newTranslate = translate.value + pan
 
-                            if (
-                                newTranslate.x in -maxX..maxX &&
-                                newTranslate.y in -maxY..maxY ||
-                                checkIfNewTransitionIsNearest(
-                                    maxX = maxX,
-                                    maxY = maxY,
-                                    oldTransition = translate.value,
-                                    newTransition = newTranslate
-                                )
-                            ) {
-                                translate.value += pan
-                            }
+                        if (
+                            newTranslate.x in -maxX..maxX &&
+                            newTranslate.y in -maxY..maxY ||
+                            checkIfNewTransitionIsNearest(
+                                maxX = maxX,
+                                maxY = maxY,
+                                oldTransition = translate.value,
+                                newTransition = newTranslate
+                            )
+                        ) {
+                            translate.value += pan
+                        }
 
-                            val newScale = scale.value * zoom
+                        val newScale = scale.value * zoom
 
-                            if (newScale < scale.value) {
-                                translate.value = translate.value * (newScale / scale.value)
-                            }
+                        if (newScale < scale.value) {
+                            translate.value = translate.value * (newScale / scale.value)
+                        }
 
-                            if (newScale in 1f..15f) {
-                                scale.value = newScale
-                            }
+                        if (newScale in 1f..15f) {
+                            scale.value = newScale
+                        }
 
-                            rotation.value += rot
+                        rotation.value += rot
 
-                            if (rotation.value != 0f || scale.value != 1f) {
-                                image?.imageTransform?.value = true
-                                blockScrolling.value = true
-                                if (lastScale != scale.value || lastRotation != rotation.value)
-                                    scope.launch {
-                                        doubleClickHandler.flow.emit(Unit)
-                                    }
-                            } else {
-                                blockScrolling.value = false
-                            }
+                        if (rotation.value != 0f || scale.value != 1f) {
+                            image?.imageTransform?.value = true
+                            blockScrolling.value = true
+                            if (lastScale != scale.value || lastRotation != rotation.value || lastTranslate != translate.value)
+                                scope.launch {
+                                    doubleClickHandler.flow.emit(Unit)
+                                }
+                        } else {
+                            blockScrolling.value = false
+                        }
 
-                        } while (event.changes.any { it.pressed })
-                    }
+                    } while (event.changes.any { it.pressed })
                 }
             }
     ) {

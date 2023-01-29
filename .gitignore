@@ -85,3 +85,5 @@ lint/tmp/
 .idea/deploymentTargetDropDown.xml
 
 keystore.properties
+
+.idea/

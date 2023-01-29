@@ -1,19 +1,3 @@
-/**
- * Copyright © 2022  Massimiliano Sartore
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see https://www.gnu.org/licenses/
- */
-
 package dev.msartore.gallery
 
 import android.annotation.SuppressLint
@@ -28,9 +12,19 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.*
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material.BottomDrawerValue
 import androidx.compose.material.ExperimentalMaterialApi
@@ -39,13 +33,19 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.*
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.rememberPagerState
@@ -53,17 +53,38 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.MultiplePermissionsState
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
+import com.google.android.gms.oss.licenses.OssLicensesMenuActivity
 import dev.msartore.gallery.MainActivity.BasicInfo.isDarkTheme
 import dev.msartore.gallery.models.DeleteMediaVars
 import dev.msartore.gallery.models.LoadingStatus
 import dev.msartore.gallery.models.MediaClass
 import dev.msartore.gallery.models.MediaList
 import dev.msartore.gallery.models.MediaType.IMAGE
-import dev.msartore.gallery.models.MediaType.VIDEO
-import dev.msartore.gallery.ui.compose.*
-import dev.msartore.gallery.ui.compose.basic.TextAuto
+import dev.msartore.gallery.ui.compose.TextAuto
 import dev.msartore.gallery.ui.theme.GalleryTheme
-import dev.msartore.gallery.utils.*
+import dev.msartore.gallery.ui.views.BottomDrawer
+import dev.msartore.gallery.ui.views.CustomBottomDrawer
+import dev.msartore.gallery.ui.views.DialogLoadingUI
+import dev.msartore.gallery.ui.views.DialogPrintUI
+import dev.msartore.gallery.ui.views.ImageViewerUI
+import dev.msartore.gallery.ui.views.MediaListUI
+import dev.msartore.gallery.ui.views.SettingsUI
+import dev.msartore.gallery.ui.views.ToolBarUI
+import dev.msartore.gallery.ui.views.VideoViewerUI
+import dev.msartore.gallery.utils.Permissions
+import dev.msartore.gallery.utils.changeBarsStatus
+import dev.msartore.gallery.utils.cor
+import dev.msartore.gallery.utils.deletePhotoFromExternalStorage
+import dev.msartore.gallery.utils.documentGeneration
+import dev.msartore.gallery.utils.getDate
+import dev.msartore.gallery.utils.getRightPermissions
+import dev.msartore.gallery.utils.getTypeFromText
+import dev.msartore.gallery.utils.initContentResolver
+import dev.msartore.gallery.utils.mergeList
+import dev.msartore.gallery.utils.queryImageMediaStore
+import dev.msartore.gallery.utils.queryVideoMediaStore
+import dev.msartore.gallery.utils.unregisterContentResolver
+import dev.msartore.gallery.utils.vibrate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -71,12 +92,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @SuppressLint("NewApi")
-@OptIn(ExperimentalAnimationApi::class,
-    ExperimentalMaterialApi::class
-)
+@OptIn(ExperimentalMaterialApi::class)
 class MainActivity : ComponentActivity() {
 
-    object BasicInfo{
+    object BasicInfo {
         val isDarkTheme = mutableStateOf(false)
     }
 
@@ -87,6 +106,15 @@ class MainActivity : ComponentActivity() {
     private val checkBoxVisible = mutableStateOf(false)
     private val mediaList = MediaList()
     private val dialogLoadingStatus = LoadingStatus()
+    private val openLink: (String) -> Unit = {
+        ContextCompat.startActivity(
+            this,
+            Intent(Intent.ACTION_VIEW).apply {
+                data = Uri.parse(it)
+            },
+            null
+        )
+    }
     private var intentSaveLocation =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { activityResult ->
             if (activityResult.resultCode == RESULT_OK) {
@@ -195,16 +223,13 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        if (intent.action == Intent.ACTION_VIEW) {
+        if (intent.action == Intent.ACTION_VIEW || intent.action == "com.android.camera.action.REVIEW") {
 
             intent.data?.let { uri ->
-                intent.type?.let { type ->
+                getTypeFromText(intent.type ?: uri.toString())?.let { type ->
                     selectedMedia.value = MediaClass(
                         uri = uri,
-                        type = when {
-                            type.contains("image") -> IMAGE
-                            else -> VIDEO
-                        }
+                        type = type
                     )
 
                     staticMedia.value = true
@@ -250,17 +275,19 @@ class MainActivity : ComponentActivity() {
             val lazyGridState = rememberLazyGridState()
             val systemUiController = rememberSystemUiController()
             val gestureEnabled = remember { mutableStateOf(false) }
-            val bottomDrawerValue = remember { mutableStateOf(BottomDrawer.Sort)}
+            val bottomDrawerValue = remember { mutableStateOf(BottomDrawer.Sort) }
             val dialogPrint = remember { mutableStateOf(false) }
             val firstVisibleItemScrollOffset = remember { derivedStateOf { lazyGridState.firstVisibleItemScrollOffset } }
             val statePager = rememberPagerState()
-            val backToListAction = remember<() -> Unit> { {
-                customAction?.invoke()
-                toolbarVisible.value = true
-                singleMediaVisibility.value = false
-                selectedMedia.value = null
-                scope.launch { bottomDrawerState.close() }
-            } }
+            val backToListAction = remember<() -> Unit> {
+                {
+                    customAction?.invoke()
+                    toolbarVisible.value = true
+                    singleMediaVisibility.value = false
+                    selectedMedia.value = null
+                    scope.launch { bottomDrawerState.close() }
+                }
+            }
 
             fileAndMediaPermissionState = rememberMultiplePermissionsState(permissions = getRightPermissions())
 
@@ -274,13 +301,13 @@ class MainActivity : ComponentActivity() {
                 ) {
                     Box(modifier = Modifier.fillMaxSize()) {
 
-                        FileAndMediaPermission(
+                        Permissions(
                             fileAndMediaPermissionState = fileAndMediaPermissionState,
                             manageMediaSettings = {
                                 getContent.launch(
                                     Intent(
                                         Settings.ACTION_REQUEST_MANAGE_MEDIA,
-                                        Uri.parse("package:${BuildConfig.APPLICATION_ID}")
+                                        Uri.fromParts("package", packageName, null)
                                     )
                                 )
                             },
@@ -296,7 +323,7 @@ class MainActivity : ComponentActivity() {
                                     updateList.emit(Unit)
                                 }
 
-                                BackHandler(enabled = true){
+                                BackHandler(enabled = true) {
                                     when {
                                         isAboutSectionVisible.value -> {
                                             scope.launch {
@@ -313,15 +340,18 @@ class MainActivity : ComponentActivity() {
                                 }
 
                                 AnimatedVisibility(
+                                    modifier = Modifier.padding(
+                                        start = 16.dp,
+                                        end = 16.dp,
+                                    ),
                                     visible = isAboutSectionVisible.value,
                                     enter = slideInHorizontally { it },
                                     exit = slideOutHorizontally { it },
                                 ) {
-                                    AboutUI {
-                                        scope.launch {
-                                            bottomDrawerState.close()
-                                        }
-                                        isAboutSectionVisible.value = false
+                                    SettingsUI(
+                                        openLink = openLink,
+                                    ) {
+                                        startActivity(Intent(applicationContext, OssLicensesMenuActivity::class.java))
                                     }
                                 }
 
@@ -380,10 +410,7 @@ class MainActivity : ComponentActivity() {
                                                     }
                                             }
 
-                                            AnimatedVisibility(
-                                                visible = singleMediaVisibility.value,
-                                                enter = scaleIn()
-                                            ) {
+                                            if(singleMediaVisibility.value) {
 
                                                 val currentPage = remember { MutableSharedFlow<Int>(1) }
                                                 val blockScrolling = remember { mutableStateOf(false) }
@@ -509,8 +536,7 @@ class MainActivity : ComponentActivity() {
                                                     } else {
                                                         colorScheme.surface
                                                     }
-                                                }
-                                                else Color.Transparent,
+                                                } else Color.Transparent,
                                                 onPDFClick = onPDFClick,
                                                 backToList = backToListAction
                                             )
@@ -558,4 +584,3 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-

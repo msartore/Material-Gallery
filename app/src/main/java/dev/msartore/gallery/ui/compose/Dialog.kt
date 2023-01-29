@@ -1,25 +1,17 @@
-/**
- * Copyright © 2022  Massimiliano Sartore
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see https://www.gnu.org/licenses/
- */
-
-package dev.msartore.gallery.ui.compose.basic
+package dev.msartore.gallery.ui.compose
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
@@ -69,7 +61,10 @@ fun Dialog(
                     fontSize = 18.sp
                 )
 
-                TextAuto(text = text)
+                TextAuto(
+                    text = text,
+                    maxLines = Int.MAX_VALUE
+                )
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -81,9 +76,10 @@ fun Dialog(
                             onCancel.invoke()
                             if (closeOnClick)
                                 status.value = false
-                        },
-                        text = cancelText
-                    )
+                        }
+                    ) {
+                        TextAuto(text = cancelText)
+                    }
 
                     Spacer(modifier = Modifier.width(8.dp))
 
@@ -92,9 +88,10 @@ fun Dialog(
                             onConfirm.invoke()
                             if (closeOnClick)
                                 status.value = false
-                       },
-                        text = confirmText
-                    )
+                        },
+                    ) {
+                        TextAuto(text = confirmText)
+                    }
                 }
             }
         }

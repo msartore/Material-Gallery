@@ -1,4 +1,4 @@
-package dev.msartore.gallery.ui.compose.basic
+package dev.msartore.gallery.ui.compose
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material.icons.Icons
@@ -29,7 +29,7 @@ fun DropDownMenu(
             Icon(
                 imageVector = Icons.Rounded.ArrowDropDown,
                 contentDescription = null,
-                tint =  MaterialTheme.colorScheme.onSecondary
+                tint = MaterialTheme.colorScheme.onSecondary
             )
         }
 

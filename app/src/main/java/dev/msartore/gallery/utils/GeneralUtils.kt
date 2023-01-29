@@ -1,19 +1,3 @@
-/**
- * Copyright © 2022  Massimiliano Sartore
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see https://www.gnu.org/licenses/
- */
-
 package dev.msartore.gallery.utils
 
 import android.Manifest.permission.*
@@ -21,6 +5,7 @@ import android.app.Activity
 import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.database.Cursor
 import android.graphics.Bitmap
@@ -179,13 +164,21 @@ fun SnapshotStateList<MediaClass>.mergeList(list: List<MediaClass>) {
 
 fun getRightPermissions() =
     when (Build.VERSION.SDK_INT) {
-        in Build.VERSION_CODES.P..Build.VERSION_CODES.Q -> {
+        in 0..Build.VERSION_CODES.Q -> {
             listOf(WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE)
         }
-        Build.VERSION_CODES.TIRAMISU -> {
-            listOf(READ_MEDIA_IMAGES)
+        in Build.VERSION_CODES.TIRAMISU..50 -> {
+            listOf(READ_MEDIA_IMAGES, READ_MEDIA_VIDEO)
         }
         else -> {
             listOf(READ_EXTERNAL_STORAGE)
         }
+    }
+
+@Suppress("DEPRECATION")
+fun packageInfo(context: Context): PackageInfo =
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        context.packageManager.getPackageInfo(context.packageName, PackageManager.PackageInfoFlags.of(0L))
+    } else {
+        context.packageManager.getPackageInfo(context.packageName, 0)
     }

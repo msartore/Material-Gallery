@@ -1,20 +1,4 @@
-/**
- * Copyright © 2022  Massimiliano Sartore
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see https://www.gnu.org/licenses/
- */
-
-package dev.msartore.gallery.ui.compose
+package dev.msartore.gallery.ui.views
 
 import android.content.Context
 import android.os.Build
@@ -44,12 +28,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.google.accompanist.placeholder.material.placeholder
 import dev.msartore.gallery.R
 import dev.msartore.gallery.models.MediaClass
 import dev.msartore.gallery.models.MediaList
-import dev.msartore.gallery.ui.compose.basic.CheckBox
-import dev.msartore.gallery.ui.compose.basic.Icon
+import dev.msartore.gallery.ui.compose.CheckBox
+import dev.msartore.gallery.ui.compose.Icon
 import dev.msartore.gallery.utils.cor
 import dev.msartore.gallery.utils.loadThumbnail
 import dev.msartore.gallery.utils.vibrate
@@ -198,7 +181,7 @@ fun Context.ImageUI(
                 modifier = Modifier
                     .width(100.dp)
                     .height(100.dp)
-                    .placeholder(visible = true)
+                    .background(MaterialTheme.colorScheme.onBackground)
             )
     }
 }
