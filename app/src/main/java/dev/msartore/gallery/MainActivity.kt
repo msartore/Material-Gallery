@@ -350,6 +350,12 @@ class MainActivity : ComponentActivity() {
                                 ) {
                                     SettingsUI(
                                         openLink = openLink,
+                                        onBack = {
+                                            scope.launch {
+                                                bottomDrawerState.close()
+                                                isAboutSectionVisible.value = false
+                                            }
+                                        }
                                     ) {
                                         startActivity(Intent(applicationContext, OssLicensesMenuActivity::class.java))
                                     }

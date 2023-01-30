@@ -28,6 +28,7 @@ import dev.msartore.gallery.utils.packageInfo
 @Composable
 fun SettingsUI(
     openLink: (String) -> Unit,
+    onBack: () -> Unit,
     openThirdLicenses: () -> Unit,
 ) {
 
@@ -44,12 +45,26 @@ fun SettingsUI(
                         .verticalScroll(scrollState),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    TextAuto(
+                    Row(
                         modifier = Modifier
-                            .padding(top = 16.dp),
-                        id = R.string.about,
-                        style = MaterialTheme.typography.displaySmall,
-                    )
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.arrow_back_24px),
+                            contentDescription = stringResource(id = R.string.back),
+                        ) {
+                            onBack()
+                        }
+
+                        TextAuto(
+                            id = R.string.about,
+                            fontWeight = FontWeight.SemiBold,
+                            style = MaterialTheme.typography.headlineSmall,
+                        )
+                    }
 
                     Spacer(modifier = Modifier.height(8.dp))
 
@@ -79,7 +94,7 @@ fun SettingsUI(
                         title = stringResource(R.string.privacy_policy),
                         icon = painterResource(id = R.drawable.policy_24px),
                         onClick = {
-                            openLink("https://msartore.dev/ares/privacy/")
+                            openLink("https://msartore.dev/material-gallery/privacy/")
                         }
                     )
 
@@ -95,7 +110,7 @@ fun SettingsUI(
                         title = stringResource(R.string.contribute_to_the_project),
                         icon = painterResource(id = R.drawable.handshake_24px),
                         onClick = {
-                            openLink("https://github.com/msartore/Ares")
+                            openLink("https://github.com/msartore/Material-Gallery")
                         }
                     )
 
