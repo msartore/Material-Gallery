@@ -200,7 +200,7 @@ fun Activity.ToolBarUI(
                         checkBoxVisible.value = false
                     }
 
-                    if (!mediaList.any { it.selected.value && it.type == MediaType.IMAGE })
+                    if (mediaList.any { it.selected.value && it.type == MediaType.IMAGE })
                         Icon(
                             shadowEnabled = false,
                             id = R.drawable.picture_as_pdf_24px
