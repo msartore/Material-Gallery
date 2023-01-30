@@ -21,8 +21,8 @@ android {
         applicationId "dev.msartore.gallery"
         minSdk 28
         targetSdk 33
-        versionCode 13
-        versionName "1.5.0"
+        versionCode 14
+        versionName "1.5.1"
         resConfigs "en", "it"
         setProperty("archivesBaseName", "gallery-$versionName")
         vectorDrawables.useSupportLibrary = true
