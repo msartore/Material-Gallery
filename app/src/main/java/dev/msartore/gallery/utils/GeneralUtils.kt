@@ -121,11 +121,12 @@ fun getLifecycleEventObserver(
 
 fun transformMillsToFormattedTime(mills: Long): String {
 
-    val seconds = (mills / 1000f).roundToInt()
+    var seconds = (mills / 1000f).roundToInt()
     var formattedText = ""
 
     if (seconds >= 3600) {
         formattedText += (seconds / 3600).toString().padStart(2, '0') + ":"
+        seconds -= (seconds / 3600) * 3600
     }
 
     formattedText += (seconds / 60).toString().padStart(2, '0') +
