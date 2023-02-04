@@ -8,8 +8,10 @@ import android.content.Intent
 import android.database.ContentObserver
 import android.database.Cursor
 import android.graphics.BitmapFactory
+import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Build
+import android.os.Environment
 import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
@@ -18,9 +20,15 @@ import android.util.Size
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.IntentSenderRequest
 import androidx.compose.ui.graphics.asImageBitmap
-import dev.msartore.gallery.models.*
+import dev.msartore.gallery.models.DatabaseInfo
+import dev.msartore.gallery.models.GlideApp
+import dev.msartore.gallery.models.MediaClass
+import dev.msartore.gallery.models.MediaInfo
+import dev.msartore.gallery.models.MediaType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.io.File
+
 
 fun ContentResolver.queryImageMediaStore(
     list: MutableList<MediaClass>
@@ -231,28 +239,32 @@ fun Context.unregisterContentResolver(contentObserver: ContentObserver) =
     contentResolver.unregisterContentObserver(contentObserver)
 
 
-suspend fun ContentResolver.deletePhotoFromExternalStorage(
+suspend fun Context.deletePhotoFromExternalStorage(
     uris: List<Uri>,
-    intentSenderLauncher: ActivityResultLauncher<IntentSenderRequest>
+    intentSenderLauncher: ActivityResultLauncher<IntentSenderRequest>,
+    actionUnderQ: (Uri) -> Unit
 ) {
+    val context = this
+
     withContext(Dispatchers.IO) {
 
-        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q){
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q) {
             uris.forEach { uri ->
-                getPath(uri)?.let { path ->
+                context.contentResolver.getPath(uri)?.let { path ->
                     val where = MediaColumns.DATA + "=?"
                     val selectionArgs = arrayOf(path)
                     val filesUri = MediaStore.Files.getContentUri("external")
 
-                    delete(filesUri, where, selectionArgs)
+                    if (context.contentResolver.delete(filesUri, where, selectionArgs) > 0) {
+                        actionUnderQ(uri)
+                    }
                 }
             }
-        }
-        else {
+        } else {
             runCatching {
                 intentSenderLauncher.launch(
                     IntentSenderRequest.Builder(
-                        MediaStore.createDeleteRequest(this@deletePhotoFromExternalStorage, uris).intentSender
+                        MediaStore.createDeleteRequest(context.contentResolver, uris).intentSender
                     ).build()
                 )
             }.getOrElse {
@@ -260,6 +272,12 @@ suspend fun ContentResolver.deletePhotoFromExternalStorage(
             }
         }
     }
+}
+
+fun Context.callBroadCast() {
+    MediaScannerConnection.scanFile(
+        this, arrayOf(Environment.getExternalStorageDirectory().toString()), null
+    ) { _, _ -> }
 }
 
 private fun readLastDateFromMediaStore(context: Context, uri: Uri) =

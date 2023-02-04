@@ -89,16 +89,16 @@ android {
 
 dependencies {
 
-    def accompanist_version = '0.27.1'
+    def accompanist_version = '0.29.1-alpha'
     def glide_version = '4.14.2'
 
-    implementation 'androidx.core:core-ktx:1.9.0'
+    implementation 'androidx.core:core-ktx:1.10.0-alpha02'
     implementation "androidx.compose.ui:ui:$compose_version"
     implementation 'androidx.compose.material3:material3:1.1.0-alpha05'
     implementation "androidx.compose.material:material:$compose_version"
     implementation "androidx.compose.ui:ui-tooling-preview:$compose_version"
-    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.5.1'
-    implementation 'androidx.activity:activity-compose:1.6.1'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.0-alpha05'
+    implementation 'androidx.activity:activity-compose:1.7.0-alpha04'
 
     // Open source notices  libraries
     implementation 'com.google.android.gms:play-services-oss-licenses:17.0.0'
@@ -119,7 +119,7 @@ dependencies {
     implementation "com.google.accompanist:accompanist-appcompat-theme:$accompanist_version"
     implementation "com.google.accompanist:accompanist-pager:$accompanist_version"
 
-    implementation 'androidx.print:print:1.0.0'
+    implementation 'androidx.print:print:1.1.0-beta01'
 
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'

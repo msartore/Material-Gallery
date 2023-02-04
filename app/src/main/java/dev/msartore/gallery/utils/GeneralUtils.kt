@@ -165,15 +165,18 @@ fun SnapshotStateList<MediaClass>.mergeList(list: List<MediaClass>) {
 
 fun getRightPermissions() =
     when (Build.VERSION.SDK_INT) {
-        in 0..Build.VERSION_CODES.Q -> {
-            listOf(WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE)
+        in 28..Build.VERSION_CODES.Q -> {
+            mutableListOf(WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE)
         }
         in Build.VERSION_CODES.TIRAMISU..50 -> {
-            listOf(READ_MEDIA_IMAGES, READ_MEDIA_VIDEO)
+            mutableListOf(READ_MEDIA_IMAGES, READ_MEDIA_VIDEO, ACCESS_MEDIA_LOCATION)
         }
         else -> {
-            listOf(READ_EXTERNAL_STORAGE)
+            mutableListOf(READ_EXTERNAL_STORAGE)
         }
+    }.also {
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P)
+            it.add(ACCESS_MEDIA_LOCATION)
     }
 
 @Suppress("DEPRECATION")

@@ -151,28 +151,23 @@ class MainActivity : ComponentActivity() {
     private var intentSenderLauncher =
         registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { activityResult ->
 
-            cor {
-                if (activityResult.resultCode == RESULT_OK) {
+            if (activityResult.resultCode == RESULT_OK) {
+                runCatching {
+                    mediaList.busy.value = true
 
-                    runCatching {
-                        mediaList.busy.value = true
-
-                        mediaList.list.removeIf { mClass ->
-                            deletedImagesUri.any { it == mClass.uri }
-                        }
-
-                        delay(10)
-
-                        mediaList.busy.value = false
-                    }.getOrElse {
-                        it.printStackTrace()
+                    mediaList.list.removeIf { mClass ->
+                        deletedImagesUri.any { it == mClass.uri }
                     }
 
-                    deleteAction?.invoke()
+                    mediaList.busy.value = false
+                }.getOrElse {
+                    it.printStackTrace()
                 }
 
-                unselectAll()
+                deleteAction?.invoke()
             }
+
+            unselectAll()
         }
 
     @OptIn(ExperimentalPermissionsApi::class, ExperimentalPagerApi::class)
@@ -578,7 +573,11 @@ class MainActivity : ComponentActivity() {
         uris: List<Uri>,
     ) {
         deletedImagesUri = uris
-        contentResolver.deletePhotoFromExternalStorage(uris, intentSenderLauncher)
+        this.deletePhotoFromExternalStorage(uris, intentSenderLauncher) { uri ->
+            mediaList.list.removeIf { uri == it.uri }
+            deleteAction?.invoke()
+            unselectAll()
+        }
     }
 
     override fun onDestroy() {

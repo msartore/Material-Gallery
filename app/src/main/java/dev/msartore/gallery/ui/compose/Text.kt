@@ -12,6 +12,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
+import dev.msartore.gallery.MainActivity
 
 @Composable
 fun TextAuto(
@@ -22,7 +23,7 @@ fun TextAuto(
     textAlign: TextAlign = TextAlign.Start,
     fontSize: TextUnit = TextUnit.Unspecified,
     maxLines: Int = 2,
-    color: Color = Color.Unspecified,
+    color: Color = if (MainActivity.BasicInfo.isDarkTheme.value) Color.White else Color.Black,
     style: TextStyle = LocalTextStyle.current
 ) {
     if (id != null)

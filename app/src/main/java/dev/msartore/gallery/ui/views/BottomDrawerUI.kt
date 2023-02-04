@@ -348,55 +348,51 @@ fun BottomDrawerMediaUI(
                 }
             }
 
-            if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_MEDIA_LOCATION) == PERMISSION_GRANTED) {
+            val exif: ExifInterface? =
+                if (Build.VERSION.SDK_INT == Build.VERSION_CODES.Q) {
+                    val uri = MediaStore.setRequireOriginal(it)
+                    val stream = contentResolver.openInputStream(uri)
+                    val ex = stream?.let { it1 -> ExifInterface(it1) }
+                    stream?.close()
+                    ex
+                }
+                else
+                    ExifInterface(path)
 
-                val exif: ExifInterface? =
-                    if (Build.VERSION.SDK_INT == Build.VERSION_CODES.Q) {
-                        val uri = MediaStore.setRequireOriginal(it)
-                        val stream = contentResolver.openInputStream(uri)
-                        val ex = stream?.let { it1 -> ExifInterface(it1) }
-                        stream?.close()
-                        ex
-                    }
-                    else
-                        ExifInterface(path)
+            Spacer(modifier = Modifier.height(12.dp))
 
-                Spacer(modifier = Modifier.height(12.dp))
+            if (mediaClass.type == MediaType.IMAGE) {
+                if (exif?.getAttribute(ExifInterface.TAG_EXPOSURE_TIME) != null) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            modifier = Modifier
+                                .weight(1f)
+                                .size(32.dp),
+                            id = R.drawable.camera_24px
+                        )
 
-                if (mediaClass.type == MediaType.IMAGE) {
-                    if (exif?.getAttribute(ExifInterface.TAG_EXPOSURE_TIME) != null) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Icon(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .size(32.dp),
-                                id = R.drawable.camera_24px
-                            )
+                        Column(Modifier.weight(5f)) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            ) {
+                                TextAuto(text = exif.getAttribute(ExifInterface.TAG_MAKE) ?: "N/A")
+                                TextAuto(text = exif.getAttribute(ExifInterface.TAG_MODEL) ?: "N/A")
+                            }
 
-                            Column(Modifier.weight(5f)) {
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                ) {
-                                    TextAuto(text = exif.getAttribute(ExifInterface.TAG_MAKE) ?: "N/A")
-                                    TextAuto(text = exif.getAttribute(ExifInterface.TAG_MODEL) ?: "N/A")
-                                }
-
-                                Spacer(modifier = Modifier.height(12.dp))
-
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                ) {
-                                    TextAuto(text = "ƒ${exif.getAttribute(ExifInterface.TAG_F_NUMBER) ?: "N/A"}")
-                                    TextAuto(text = "${exif.getAttribute(ExifInterface.TAG_FOCAL_LENGTH) ?: "N/A"}mm")
-                                    TextAuto(text = "ISO${exif.getAttribute(ExifInterface.TAG_PHOTOGRAPHIC_SENSITIVITY) ?: "N/A"}")
-                                }
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            ) {
+                                TextAuto(text = "ƒ${exif.getAttribute(ExifInterface.TAG_F_NUMBER) ?: "N/A"}")
+                                TextAuto(text = "${exif.getAttribute(ExifInterface.TAG_FOCAL_LENGTH) ?: "N/A"}mm")
+                                TextAuto(text = "ISO${exif.getAttribute(ExifInterface.TAG_PHOTOGRAPHIC_SENSITIVITY) ?: "N/A"}")
                             }
                         }
                     }
-
+                }
+                if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_MEDIA_LOCATION) == PERMISSION_GRANTED)
                     if (exif?.getAttribute(ExifInterface.TAG_GPS_LATITUDE) != null) {
 
                         Row(
@@ -407,7 +403,6 @@ fun BottomDrawerMediaUI(
                             TextAuto(text = exif.getAttribute(ExifInterface.TAG_GPS_ALTITUDE) ?: "N/A")
                         }
                     }
-                }
             }
         }
     }
