@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import android.database.ContentObserver
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.VibrationEffect
 import android.provider.Settings
@@ -99,12 +100,12 @@ class MainActivity : ComponentActivity() {
         val isDarkTheme = mutableStateOf(false)
     }
 
-    private var deletedImagesUri: List<Uri> = listOf()
     private var deleteAction: (() -> Unit)? = null
     private var contentObserver: Pair<ContentObserver, ContentObserver>? = null
     private val updateList = MutableSharedFlow<Unit>()
     private val checkBoxVisible = mutableStateOf(false)
     private val mediaList = MediaList()
+    private val deletedMediaList = mutableListOf<Uri>()
     private val dialogLoadingStatus = LoadingStatus()
     private val openLink: (String) -> Unit = {
         ContextCompat.startActivity(
@@ -149,25 +150,11 @@ class MainActivity : ComponentActivity() {
             }
         }
     private var intentSenderLauncher =
-        registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { activityResult ->
+        registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
 
-            if (activityResult.resultCode == RESULT_OK) {
-                runCatching {
-                    mediaList.busy.value = true
-
-                    mediaList.list.removeIf { mClass ->
-                        deletedImagesUri.any { it == mClass.uri }
-                    }
-
-                    mediaList.busy.value = false
-                }.getOrElse {
-                    it.printStackTrace()
-                }
-
+            if (result.resultCode == RESULT_OK) {
                 deleteAction?.invoke()
             }
-
-            unselectAll()
         }
 
     @OptIn(ExperimentalPermissionsApi::class, ExperimentalPagerApi::class)
@@ -208,13 +195,33 @@ class MainActivity : ComponentActivity() {
 
         cor {
             mediaDeleteFlow.collect { deleteMediaVars ->
-                checkBoxVisible.value = false
 
-                if (deleteMediaVars.listUri.size == 1) {
-                    deleteAction = deleteMediaVars.action
+                deleteAction = {
+
+                    mediaList.busy.value = true
+
+                    runCatching {
+                        mediaList.list.removeAll { deletedMediaList.contains(it.uri) }
+                    }.getOrElse {
+                        it.printStackTrace()
+                    }
+
+                    if (deleteMediaVars.action == null) {
+                        unselectAll()
+                        checkBoxVisible.value = false
+                    }
+                    else {
+                        deleteMediaVars.action.invoke()
+                    }
+
+                    mediaList.busy.value = false
                 }
 
                 deleteFiles(deleteMediaVars.listUri)
+
+                if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q) {
+                    deleteAction?.invoke()
+                }
             }
         }
 
@@ -572,11 +579,8 @@ class MainActivity : ComponentActivity() {
     private suspend fun deleteFiles(
         uris: List<Uri>,
     ) {
-        deletedImagesUri = uris
         this.deletePhotoFromExternalStorage(uris, intentSenderLauncher) { uri ->
-            mediaList.list.removeIf { uri == it.uri }
-            deleteAction?.invoke()
-            unselectAll()
+            deletedMediaList.add(uri)
         }
     }
 

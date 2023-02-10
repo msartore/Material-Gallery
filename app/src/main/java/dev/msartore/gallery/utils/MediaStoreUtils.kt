@@ -8,10 +8,8 @@ import android.content.Intent
 import android.database.ContentObserver
 import android.database.Cursor
 import android.graphics.BitmapFactory
-import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Build
-import android.os.Environment
 import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
@@ -27,7 +25,6 @@ import dev.msartore.gallery.models.MediaInfo
 import dev.msartore.gallery.models.MediaType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.io.File
 
 
 fun ContentResolver.queryImageMediaStore(
@@ -242,7 +239,7 @@ fun Context.unregisterContentResolver(contentObserver: ContentObserver) =
 suspend fun Context.deletePhotoFromExternalStorage(
     uris: List<Uri>,
     intentSenderLauncher: ActivityResultLauncher<IntentSenderRequest>,
-    actionUnderQ: (Uri) -> Unit
+    actionUntilQ: (Uri) -> Unit
 ) {
     val context = this
 
@@ -256,7 +253,7 @@ suspend fun Context.deletePhotoFromExternalStorage(
                     val filesUri = MediaStore.Files.getContentUri("external")
 
                     if (context.contentResolver.delete(filesUri, where, selectionArgs) > 0) {
-                        actionUnderQ(uri)
+                        actionUntilQ(uri)
                     }
                 }
             }
@@ -272,12 +269,6 @@ suspend fun Context.deletePhotoFromExternalStorage(
             }
         }
     }
-}
-
-fun Context.callBroadCast() {
-    MediaScannerConnection.scanFile(
-        this, arrayOf(Environment.getExternalStorageDirectory().toString()), null
-    ) { _, _ -> }
 }
 
 private fun readLastDateFromMediaStore(context: Context, uri: Uri) =

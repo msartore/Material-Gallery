@@ -21,8 +21,8 @@ android {
         applicationId "dev.msartore.gallery"
         minSdk 28
         targetSdk 33
-        versionCode 15
-        versionName "1.6.0"
+        versionCode 16
+        versionName "1.6.1"
         resConfigs "en", "it"
         setProperty("archivesBaseName", "gallery-$versionName")
         vectorDrawables.useSupportLibrary = true
@@ -94,11 +94,11 @@ dependencies {
 
     implementation 'androidx.core:core-ktx:1.10.0-alpha02'
     implementation "androidx.compose.ui:ui:$compose_version"
-    implementation 'androidx.compose.material3:material3:1.1.0-alpha05'
+    implementation 'androidx.compose.material3:material3:1.1.0-alpha06'
     implementation "androidx.compose.material:material:$compose_version"
     implementation "androidx.compose.ui:ui-tooling-preview:$compose_version"
-    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.0-alpha05'
-    implementation 'androidx.activity:activity-compose:1.7.0-alpha04'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.0-beta01'
+    implementation 'androidx.activity:activity-compose:1.7.0-beta01'
 
     // Open source notices  libraries
     implementation 'com.google.android.gms:play-services-oss-licenses:17.0.0'
