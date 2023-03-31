@@ -87,3 +87,5 @@ lint/tmp/
 keystore.properties
 
 .idea/
+
+docs/.vscode/
